@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sound picker · webinar overlay</title>
+    <style>
+      html, body { margin: 0; background: #1b1a1f; color: #e6e1d6; font: 15px/1.4 system-ui, sans-serif; }
+      #app { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+      #events { background: #141317; border-right: 1px solid #2d2b33; padding: 12px 0; position: sticky; top: 0; height: 100vh; overflow: auto; box-sizing: border-box; }
+      #events h1 { font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: #c9a227; margin: 4px 16px 10px; }
+      #events button { display: block; width: 100%; text-align: left; padding: 8px 16px; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+      #events button:hover { background: #221f2a; }
+      #events button.cur { background: #2b2536; color: #f1d271; }
+      #events button .st { float: right; opacity: .7; font-size: 13px; }
+      #events button .st.yes { color: #7cf29a; opacity: 1; }
+      #events button .st.none { color: #8a8f94; }
+      #main { padding: 24px 32px; max-width: 900px; }
+      h2 { margin: 0 0 4px; font-size: 24px; color: #f1d271; }
+      .when { color: #a9aeb3; margin-bottom: 18px; }
+      .card { display: grid; grid-template-columns: 44px 56px 1fr auto auto; gap: 12px; align-items: center; padding: 10px 12px; margin: 6px 0; border: 1px solid #2d2b33; border-radius: 8px; background: #221f2a; }
+      .card.playing { border-color: #4fc3ff; }
+      .card.picked { border-color: #c9a227; background: #2b2536; }
+      .card .n { font-size: 18px; color: #c9a227; text-align: center; }
+      .card .play { width: 48px; height: 36px; border-radius: 6px; border: 1px solid #4fc3ff; background: #16222b; color: #4fc3ff; font-size: 16px; cursor: pointer; }
+      .card .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .card .meta { font-size: 12.5px; color: #8a8f94; }
+      .card .meta a { color: #8fb6d9; text-decoration: none; }
+      .card .sec { color: #a9aeb3; font-variant-numeric: tabular-nums; }
+      .card .choose { padding: 8px 14px; border-radius: 6px; border: 1px solid #c9a227; background: none; color: #f1d271; cursor: pointer; }
+      .card.picked .choose { background: #c9a227; color: #1a1208; }
+      .none { margin-top: 10px; }
+      .none button { padding: 8px 14px; border-radius: 6px; border: 1px solid #8a8f94; background: none; color: #cfd3d8; cursor: pointer; }
+      .none button.picked { background: #8a8f94; color: #111; }
+      .help { margin-top: 28px; color: #8a8f94; font-size: 13px; line-height: 1.6; }
+      .help kbd { background: #2d2b33; padding: 1px 6px; border-radius: 4px; font-family: inherit; }
+      #vol { width: 160px; vertical-align: middle; }
+      .empty { color: #ff8fb1; }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <nav id="events"><h1>Events</h1></nav>
+      <main id="main"></main>
+    </div>
+    <script>
+      let state, cur = 0, audio = null, playingN = 0;
+      const nav = document.getElementById("events"), main = document.getElementById("main");
+      let volume = +(localStorage.getItem("picker.vol") || 0.8);
+      async function load() { state = await (await fetch("/state")).json(); render(); }
+      function status(id) { const p = state.picks[id]; return p ? "✓ " + p.n : state.manifest?.events?.[id]?.candidates.length ? "" : "–"; }
+      function render() {
+        nav.innerHTML = "<h1>Events</h1>" + state.events.map((e, i) => `<button data-i="${i}" class="${i === cur ? "cur" : ""}">${e.label}<span class="st ${state.picks[e.id] ? "yes" : ""}">${status(e.id)}</span></button>`).join("");
+        nav.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { cur = +b.dataset.i; stop(); render(); }));
+        const ev = state.events[cur], m = state.manifest?.events?.[ev.id], pick = state.picks[ev.id];
+        const cards = (m?.candidates ?? []).map((c) => `
+          <div class="card ${pick?.n === c.n ? "picked" : ""} ${playingN === c.n ? "playing" : ""}" data-n="${c.n}">
+            <div class="n">${c.n}</div>
+            <button class="play" title="play (key ${c.n})">${playingN === c.n ? "■" : "▶"}</button>
+            <div><div class="title">${esc(c.title)}</div><div class="meta">${c.source === "oga" ? "OpenGameArt" : c.source === "freesound" ? "Freesound" : "Kenney"} · ${esc(c.author)} · ${c.license} · <a href="${c.url}" target="_blank">source</a></div></div>
+            <div class="sec">${c.seconds.toFixed(2)} s</div>
+            <button class="choose" title="pick (shift+${c.n})">${pick?.n === c.n ? "picked" : "pick"}</button>
+          </div>`).join("");
+        main.innerHTML = `<h2>${ev.label}</h2><div class="when">${esc(ev.when)}</div>
+          ${cards || `<p class="empty">no candidates harvested for this event yet (npm run sounds:harvest ${ev.id})</p>`}
+          <div class="none"><button class="${!pick && state.picks[ev.id] === undefined && state.noneSet?.[ev.id] ? "picked" : ""}" id="none">no sound for this</button>
+            <span style="margin-left:18px;color:#8a8f94">volume <input id="vol" type="range" min="0" max="1" step="0.05" value="${volume}"></span></div>
+          <div class="help"><kbd>1</kbd>–<kbd>7</kbd> play · <kbd>shift</kbd>+<kbd>1</kbd>–<kbd>7</kbd> pick · <kbd>0</kbd> none · <kbd>↓</kbd> <kbd>↑</kbd> next / previous event · <kbd>space</kbd> stop<br>
+          Picks are written at once to public/sounds/picks.json (and the clip to public/sounds/${ev.id}.mp3); the overlay plays the picked ones. Commit them when done.</div>`;
+        main.querySelectorAll(".card").forEach((card) => {
+          const n = +card.dataset.n;
+          card.querySelector(".play").addEventListener("click", () => toggle(n));
+          card.querySelector(".choose").addEventListener("click", () => choose(n));
+        });
+        document.getElementById("none").addEventListener("click", () => choose(null));
+        document.getElementById("vol").addEventListener("input", (e) => { volume = +e.target.value; localStorage.setItem("picker.vol", volume); if (audio) audio.volume = volume; });
+      }
+      const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+      function stop() { if (audio) { audio.pause(); audio = null; } playingN = 0; }
+      function toggle(n) {
+        if (playingN === n) { stop(); render(); return; }
+        stop();
+        const ev = state.events[cur], c = state.manifest.events[ev.id].candidates.find((c) => c.n === n);
+        if (!c) return;
+        audio = new Audio(`/c/${c.file}`);
+        audio.volume = volume;
+        audio.addEventListener("ended", () => { playingN = 0; render(); });
+        audio.play();
+        playingN = n;
+        render();
+      }
+      async function choose(n) {
+        const ev = state.events[cur];
+        const r = await (await fetch("/pick", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ event: ev.id, n }) })).json();
+        if (r.ok) { state.picks = r.picks; state.noneSet = { ...(state.noneSet || {}), [ev.id]: n === null }; render(); }
+      }
+      document.addEventListener("keydown", (e) => {
+        if (e.target.tagName === "INPUT") return;
+        if (e.key >= "1" && e.key <= "7") { e.preventDefault(); e.shiftKey ? choose(+e.key) : toggle(+e.key); }
+        else if (e.code >= "Digit1" && e.code <= "Digit7" && e.shiftKey) { e.preventDefault(); choose(+e.code.slice(5)); } // shifted digits are symbols on most layouts
+        else if (e.key === "0") { e.preventDefault(); choose(null); }
+        else if (e.key === "ArrowDown") { e.preventDefault(); cur = Math.min(state.events.length - 1, cur + 1); stop(); render(); }
+        else if (e.key === "ArrowUp") { e.preventDefault(); cur = Math.max(0, cur - 1); stop(); render(); }
+        else if (e.key === " ") { e.preventDefault(); stop(); render(); }
+      });
+      load();
+    </script>
+  </body>
+</html>

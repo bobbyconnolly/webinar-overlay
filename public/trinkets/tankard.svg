@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" width="50" height="50">
+  <!-- a wooden tankard: hand-drawn placeholder -->
+  <path d="M30 18 C40 18 42 24 40 28 C38 32 34 33 30 32" fill="none" stroke="#5a3a1a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M30 18 C40 18 42 24 40 28 C38 32 34 33 30 32" fill="none" stroke="#8b5a2b" stroke-width="2" stroke-linecap="round"/>
+  <rect x="10" y="12" width="22" height="30" rx="3" fill="#8b5a2b" stroke="#5a3a1a" stroke-width="1.5"/>
+  <path d="M15 12 V42 M21 12 V42 M27 12 V42" stroke="#6b4420" stroke-width="1" opacity="0.8"/>
+  <rect x="9" y="17" width="24" height="3" fill="#3f3f3f"/>
+  <rect x="9" y="34" width="24" height="3" fill="#3f3f3f"/>
+  <ellipse cx="21" cy="12" rx="12" ry="4" fill="#f6edc8" stroke="#c9b27a" stroke-width="1.2"/>
+  <circle cx="16" cy="10" r="2.5" fill="#fff8e0"/><circle cx="25" cy="9" r="3" fill="#fff8e0"/><circle cx="29" cy="12" r="2" fill="#fff8e0"/>
+</svg>

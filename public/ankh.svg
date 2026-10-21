@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300" width="200" height="300">
+  <defs>
+    <!-- userSpaceOnUse: a bounding-box gradient is ignored on zero-width lines. -->
+    <linearGradient id="gold" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="300">
+      <stop offset="0" stop-color="#f7dd8a"/>
+      <stop offset="0.5" stop-color="#c9a227"/>
+      <stop offset="1" stop-color="#8a5f0f"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#gold)" stroke-width="26" stroke-linecap="round">
+    <ellipse cx="100" cy="76" rx="44" ry="60"/>
+    <line x1="100" y1="136" x2="100" y2="284"/>
+    <line x1="32" y1="168" x2="168" y2="168"/>
+  </g>
+</svg>

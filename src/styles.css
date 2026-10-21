@@ -1,0 +1,3050 @@
+/* Overlay styles. The window itself is transparent; only widgets paint pixels. */
+:root {
+  /* Stream mode (Ctrl+Shift+S) sets both to 1.5: --stage sizes things placed
+     in screen pixels (reagents, cursors, bursts), --stage-w scales widgets. */
+  --stage: 1;
+  --stage-w: 1;
+  --gold: #c9a227;
+  --gold-hi: #f1d271;
+  --parchment: #e9d8a6;
+  --parchment-dk: #d3ba7c;
+  --ink: #3a2410;
+  --wood: #4a2c14;
+  --moon: #4fc3ff;
+  --moon-dk: #0b3d91;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: transparent;
+  font-family: Georgia, "Palatino Linotype", "Book Antiqua", serif;
+  color: var(--ink);
+}
+
+/* ---- Mode indicator ---- */
+#edge-glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  box-shadow:
+    inset 0 0 0 3px rgba(201, 162, 39, 0.9),
+    inset 0 0 48px rgba(201, 162, 39, 0.35);
+}
+body.interactive #edge-glow {
+  opacity: 1;
+}
+
+.pill {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 86; /* above the night, the effects and the possession layer; below the devtools */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(20, 14, 8, 0.85);
+  border: 1px solid var(--gold);
+  color: var(--gold-hi);
+  font-size: 13px;
+  user-select: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+#mode-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6b6b6b;
+}
+body.interactive #mode-dot {
+  background: #43d17a;
+  box-shadow: 0 0 8px #43d17a;
+}
+.pill button {
+  font: inherit;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--gold);
+  background: rgba(201, 162, 39, 0.15);
+  color: var(--gold-hi);
+  cursor: pointer;
+}
+.pill button:hover {
+  background: rgba(201, 162, 39, 0.35);
+}
+#quit-btn {
+  padding: 4px 8px;
+}
+/* Reset game: a two-step confirmation inside the pill (no native dialogs on the overlay). */
+#reset-confirm {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  color: #ffb8b8;
+}
+#control.confirm #reset-btn {
+  display: none;
+}
+#control.confirm #reset-confirm {
+  display: inline-flex;
+}
+#reset-yes {
+  border-color: #e05a5a;
+  background: rgba(224, 90, 90, 0.25);
+}
+#reset-yes:hover {
+  background: rgba(224, 90, 90, 0.5);
+}
+/* Devtools panel: fixed bottom-right, presenter only (Ctrl+Shift+D / ⚙). */
+#dev {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 90;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  width: 340px;
+  padding: 8px 12px 10px;
+  border-radius: 10px;
+  background: rgba(20, 14, 8, 0.92);
+  border: 1px solid var(--gold);
+  color: var(--gold-hi);
+  font-size: 13px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+#dev.open {
+  display: flex;
+}
+#dev .dev-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-variant: small-caps;
+  letter-spacing: 1.5px;
+}
+#dev .dev-head button {
+  font: inherit;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--gold);
+  background: rgba(201, 162, 39, 0.15);
+  color: var(--gold-hi);
+  cursor: pointer;
+}
+#dev select {
+  font: inherit;
+  margin-left: 6px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--gold);
+  background: rgba(20, 14, 8, 0.95);
+  color: var(--gold-hi);
+}
+#dev .dev-status {
+  font-size: 11px;
+  font-style: italic;
+  opacity: 0.75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#dev .dev-status:empty {
+  display: none;
+}
+/* Sections: a hairline between the game, the spells, the stage and the Seekers. */
+#dev .dev-sect {
+  padding-top: 6px;
+  border-top: 1px solid rgba(201, 162, 39, 0.3);
+}
+#dev .qr-actions {
+  gap: 4px;
+}
+#dev .qr-actions button {
+  padding: 3px 8px;
+}
+#dev button.primary {
+  background: rgba(201, 162, 39, 0.45);
+  font-weight: bold;
+}
+/* Respawn now: only while a limited reagent is spent and waiting to return (quest.ts names it). */
+#dev-respawn {
+  display: none;
+}
+body.reagent-gone #dev-respawn {
+  display: inline-block;
+}
+#dev .dev-phase {
+  font-size: 12px;
+  margin-top: -2px;
+}
+#dev .dev-phase .dev-next {
+  opacity: 0.7;
+  font-style: italic;
+}
+#dev .dev-phase .dev-park {
+  color: #bfe9ff;
+}
+#dev-btn {
+  padding: 4px 7px;
+}
+#dev #dev-bot {
+  max-width: 120px;
+}
+#dev-phone {
+  color: #bfe9ff;
+  font-style: normal;
+  opacity: 0.95;
+}
+/* Possession (phantom.ts): the layer takes the pointer; the OS cursor hides, the phantom's arrow is the pointer. */
+#possess {
+  position: fixed;
+  inset: 0;
+  z-index: 84;
+  display: none;
+  cursor: none;
+}
+body.possessing #possess {
+  display: block;
+}
+.cursor.possessed .label::after {
+  content: " · your mouse";
+  opacity: 0.7;
+  font-variant: normal;
+  font-style: italic;
+}
+#control.collapsed #dev-btn {
+  display: none;
+}
+/* Lock icon (closed = locked interactive, open = click-through) and the collapsed pill. */
+.pill button svg.ico {
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+  margin-right: 5px;
+}
+body.locked .ico-open,
+body:not(.locked) .ico-locked {
+  display: none;
+}
+#collapse-btn {
+  padding: 2px 8px;
+  font-size: 16px;
+  line-height: 1;
+}
+#control.collapsed #mode-label,
+#control.collapsed #reset-btn,
+#control.collapsed #reset-confirm,
+#control.collapsed #quit-btn,
+#control.collapsed #lock-btn .txt {
+  display: none;
+}
+#control.collapsed #lock-btn {
+  padding: 4px 7px;
+}
+#control.collapsed #lock-btn svg.ico {
+  margin-right: 0;
+}
+/* Eye: open = widgets shown, closed = hidden (Ctrl+Shift+H). It stays in the collapsed pill (Bobby). */
+#hide-btn {
+  padding: 4px 7px;
+}
+#hide-btn svg.ico {
+  margin-right: 0;
+}
+#control.hidden .eye-open,
+#control:not(.hidden) .eye-closed {
+  display: none;
+}
+#control.hidden #hide-btn {
+  color: #ffb8b8;
+  border-color: #e05a5a;
+}
+/* Everything but the pill, the cursors and the effects goes away. */
+body.widgets-hidden .widget,
+body.widgets-hidden #items,
+body.widgets-hidden #trinkets,
+body.widgets-hidden #quest-banner {
+  display: none !important;
+}
+
+/* Nothing on the overlay is selectable text (a stray selection once drew a box around Ginger). */
+html,
+body {
+  user-select: none;
+  -webkit-user-select: none;
+}
+img,
+svg {
+  -webkit-user-drag: none;
+}
+
+/* ---- Widgets ---- */
+.widget {
+  position: absolute;
+  user-select: none;
+  cursor: default;
+  transform: scale(var(--stage-w));
+  transform-origin: 0 0; /* left/top stay the anchor, so dragging is unchanged */
+}
+/* Stream mode: presenter-only text goes, the pill shrinks out of the way. */
+body.stream .hint,
+body.stream .qr-full-close-hint {
+  display: none;
+}
+body.stream #control {
+  transform: scale(0.8);
+  transform-origin: 100% 0;
+  opacity: 0.55;
+}
+body.stream #control:hover {
+  opacity: 1;
+}
+body.interactive .widget:not([data-fixed]) {
+  cursor: grab;
+}
+/* A widget with data-handle is dragged only by its .handle (the moongate by its runes). */
+body.interactive .widget[data-handle] {
+  cursor: default;
+}
+body.interactive .widget[data-handle] .handle {
+  cursor: grab;
+}
+.widget.carried {
+  outline: 2px dashed rgba(241, 210, 113, 0.8);
+  outline-offset: 4px;
+}
+body.interactive .widget.dragging {
+  cursor: grabbing;
+}
+.hint {
+  font-size: 11px;
+  opacity: 0.65;
+  font-style: italic;
+  margin: 6px 0 0;
+}
+.rune {
+  font-family: "Segoe UI Historic", "Segoe UI Symbol", serif;
+  letter-spacing: 3px;
+}
+
+/* 1. Parchment text card */
+.parchment {
+  width: 380px;
+  padding: 18px 22px;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(255, 255, 255, 0.35), transparent 60%),
+    linear-gradient(160deg, var(--parchment), var(--parchment-dk));
+  border: 3px double var(--wood);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.45),
+    inset 0 0 30px rgba(74, 44, 20, 0.25);
+}
+.parchment h1 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+  color: var(--wood);
+  border-bottom: 1px solid var(--wood);
+  padding-bottom: 6px;
+}
+.parchment p {
+  margin: 8px 0;
+  line-height: 1.4;
+  font-size: 15px;
+}
+.parchment kbd {
+  font-family: inherit;
+  padding: 0 5px;
+  border: 1px solid var(--wood);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.35);
+}
+/* Pages: one shown at a time, one level's set (codex.ts); ‹ page / of › for the Seer (phones tap the card).
+   The level's pages (.lvl) all sit in the same grid cell, hidden but laid out, so the card is as tall as
+   the tallest of them and the buttons stay put while cycling (Bobby 2026-10-03); other levels' pages are
+   out of the flow entirely. */
+.codex-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.codex-page {
+  display: none;
+}
+.codex-page.lvl {
+  display: block;
+  grid-row: 2;
+  grid-column: 1;
+  visibility: hidden;
+}
+.codex-page.on {
+  visibility: visible;
+}
+.codex-art {
+  float: right;
+  width: 64px;
+  height: 64px;
+  margin: 0 0 4px 10px;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+}
+/* The Seer's notes (levels 1–3): one line per page in big type, since the students see the stage
+   at half scale over Discord; a small caption names the level. */
+.codex-page.tip::before {
+  content: "the Seer's notes · level " attr(data-level);
+  display: block;
+  margin: 2px 0 6px;
+  font-size: 12px;
+  font-variant: small-caps;
+  letter-spacing: 1.5px;
+  color: var(--wood);
+  opacity: 0.8;
+}
+.codex-page.tip p {
+  font-size: 24px;
+  line-height: 1.3;
+  margin: 6px 0 10px;
+}
+.codex-hint {
+  text-align: center;
+}
+.codex-nav {
+  grid-row: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--wood);
+}
+.codex-nav button {
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--wood);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  color: var(--wood);
+  cursor: pointer;
+}
+.codex-nav button:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+.parchment .rune {
+  font-size: 22px;
+  color: var(--wood);
+  text-align: center;
+}
+/* Rolled up: only the scroll icon (backpack-sized) remains; the card body hides. */
+.parchment .scroll {
+  display: none;
+  width: 120px;
+  height: 120px;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.6));
+}
+.parchment.rolled {
+  width: auto;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+.parchment.rolled .codex-body {
+  display: none;
+}
+.parchment.rolled .scroll {
+  display: block;
+}
+.parchment.pop {
+  animation: codex-pop 0.3s ease-out;
+}
+@keyframes codex-pop {
+  0% {
+    transform: scale(var(--stage-w)) scale(0.85);
+  }
+  60% {
+    transform: scale(var(--stage-w)) scale(1.05);
+  }
+  100% {
+    transform: scale(var(--stage-w));
+  }
+}
+
+/* 2. Framed image */
+.frame {
+  margin: 0;
+  padding: 14px;
+  background: #0d0a14;
+  border: 8px solid var(--wood);
+  outline: 2px solid var(--gold);
+  /* --charge (0..1) is set by ankh.ts: the ritual glow */
+  --charge: 0;
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.5),
+    0 0 calc(var(--charge) * 90px) calc(var(--charge) * 22px) rgba(241, 210, 113, calc(var(--charge) * 0.85));
+  text-align: center;
+}
+.frame img {
+  display: block;
+  width: 150px;
+  height: auto;
+  margin: 0 auto 8px;
+  filter: drop-shadow(0 0 calc(12px + var(--charge) * 36px) rgba(241, 210, 113, calc(0.6 + var(--charge) * 0.4)))
+    brightness(calc(1 + var(--charge) * 1.4));
+}
+/* The flash when the ritual completes: covers the ankh and the cursors on it for a moment. */
+.ankh-flash {
+  position: fixed;
+  z-index: 75;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, #fff 32%, rgba(255, 243, 210, 0.95) 50%, rgba(255, 233, 176, 0.5) 64%, rgba(255, 233, 176, 0) 72%);
+  animation: ankh-flash 0.85s ease-out forwards;
+}
+@keyframes ankh-flash {
+  0% {
+    transform: scale(0.15);
+    opacity: 0;
+  }
+  18% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+.frame figcaption {
+  color: var(--gold-hi);
+  font-size: 12px;
+  font-style: italic;
+}
+/* Level 3 (horde.ts): the ankh is the key to the moongate. Until it gets there it and
+   the gate's runes pulse together in cold blue (a pseudo-element, so the ritual glow still works). */
+.frame.keyed::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 4px;
+  pointer-events: none;
+  animation: ankh-yearn 2.2s ease-in-out infinite;
+}
+@keyframes ankh-yearn {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(79, 195, 255, 0);
+  }
+  50% {
+    box-shadow: 0 0 60px 14px rgba(79, 195, 255, 0.75);
+  }
+}
+.moongate-wrap.keyed .rune {
+  animation: rune-yearn 2.2s ease-in-out infinite;
+}
+@keyframes rune-yearn {
+  0%,
+  100% {
+    color: var(--gold-hi);
+    text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+  }
+  50% {
+    color: #bfe9ff;
+    text-shadow:
+      0 0 14px #4fc3ff,
+      0 0 28px #4fc3ff;
+  }
+}
+/* On the gate: the ankh sheds its frame and sits over the gate (above it), set into the light. */
+.frame.on-gate {
+  z-index: 2;
+  padding: 0;
+  background: none;
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+.frame.on-gate::after,
+.frame.on-gate figcaption {
+  display: none;
+}
+.frame.on-gate img {
+  margin: 0;
+  filter: drop-shadow(0 0 calc(10px + var(--charge) * 36px) rgba(143, 220, 255, calc(0.75 + var(--charge) * 0.25)))
+    brightness(calc(1 + var(--charge) * 1.4));
+}
+/* A wave runs: the ankh lies dark and sickly on the gate. */
+.frame.on-gate.dark img {
+  filter: brightness(0.45) sepia(1) hue-rotate(60deg) saturate(2.2) drop-shadow(0 0 14px #5aff5a);
+  animation: ankh-dark 1.6s ease-in-out infinite;
+}
+@keyframes ankh-dark {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* 8. Signpost with a lantern: decoration. Above the night layer so the lantern shows through the dark. */
+.signpost {
+  margin: 0;
+  padding: 0;
+  width: 120px;
+  z-index: 36;
+}
+.signpost svg {
+  display: block;
+  overflow: visible; /* the birds fly well outside the drawing box */
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.55));
+}
+/* Birds on the cap: a click or a cursor tap sends one off (flapping, up and to its side); back later. */
+.signpost .bird {
+  cursor: pointer;
+  pointer-events: auto;
+}
+.signpost .bird .wing {
+  transform-box: fill-box;
+  transform-origin: 100% 100%;
+}
+.signpost .bird.fly {
+  animation: bird-fly 1.3s ease-in forwards;
+}
+.signpost .bird.fly .wing {
+  animation: flap 0.16s ease-in-out infinite alternate;
+}
+.signpost .bird.away {
+  visibility: hidden;
+}
+.signpost .bird.land {
+  animation: bird-land 0.7s ease-out;
+}
+@keyframes bird-fly {
+  0% {
+    translate: 0 0;
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    translate: var(--fx, -150px) -240px;
+    opacity: 0;
+  }
+}
+@keyframes flap {
+  from {
+    rotate: -35deg;
+  }
+  to {
+    rotate: 25deg;
+  }
+}
+@keyframes bird-land {
+  from {
+    translate: 0 -60px;
+    opacity: 0;
+  }
+  to {
+    translate: 0 0;
+    opacity: 1;
+  }
+}
+.signpost .flame {
+  opacity: 0.35;
+  transition: opacity 0.8s;
+}
+.signpost .glass {
+  fill: rgba(255, 230, 180, 0.18);
+  transition: fill 0.8s;
+}
+.lantern-glow {
+  position: absolute;
+  left: -70px; /* centred on the lantern at (100, 74) */
+  top: -96px;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 120, 0.6) 0%, rgba(255, 190, 80, 0.28) 32%, rgba(255, 170, 60, 0) 68%);
+  opacity: 0;
+  transition: opacity 1.2s;
+  pointer-events: none;
+}
+body.night .signpost .flame {
+  opacity: 1;
+  animation: flicker 1.1s ease-in-out infinite;
+}
+body.night .signpost .glass {
+  fill: rgba(255, 220, 140, 0.55);
+}
+body.night .lantern-glow {
+  opacity: 1;
+  animation: lantern-breathe 2.4s ease-in-out infinite;
+}
+@keyframes flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+@keyframes lantern-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.07);
+  }
+}
+
+/* 4. QR widget: small QR + room + status + actions */
+.qr {
+  display: flex;
+  --qr-zoom: 1; /* stepped by the − / + buttons (qr.ts) */
+  gap: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(20, 14, 8, 0.88);
+  border: 1px solid var(--gold);
+  color: var(--gold-hi);
+  font-size: 13px;
+}
+.qr-small {
+  width: calc(170px * var(--qr-zoom));
+  height: calc(170px * var(--qr-zoom));
+  flex: none;
+  background: #f7efd8;
+  border-radius: 6px;
+  overflow: hidden;
+  transition:
+    filter 0.3s,
+    width 0.25s,
+    height 0.25s;
+}
+.qr-small svg,
+.qr-big svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.qr-none {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+  color: var(--ink);
+  font-size: 11px;
+  line-height: 1.25;
+  text-align: center;
+}
+.qr-none b {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.qr-none code {
+  font-family: Consolas, monospace;
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+.qr-big .qr-none {
+  font-size: 2.6vh;
+  gap: 1.2vh;
+}
+.qr-big .qr-none b {
+  font-size: 3.4vh;
+}
+.qr-big .qr-none code {
+  font-size: 2.4vh;
+}
+.qr[data-status="offline"] .qr-small,
+.qr[data-status="connecting"] .qr-small,
+.qr[data-status="unconfigured"] .qr-small {
+  filter: grayscale(1) opacity(0.35);
+}
+.qr-meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  min-width: 150px;
+}
+.qr-room-line {
+  font-size: 15px;
+}
+.qr-room-line b {
+  font-size: calc(22px * var(--qr-zoom));
+  transition: font-size 0.25s;
+  letter-spacing: 4px;
+  color: #fff3c4;
+}
+.qr .dot,
+.qr-full .dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: #6b6b6b;
+}
+.qr[data-status="online"] .dot {
+  background: #43d17a;
+  box-shadow: 0 0 8px #43d17a;
+}
+.qr[data-status="connecting"] .dot {
+  background: #e0b32c;
+}
+.qr[data-status="offline"] .dot {
+  background: #d14343;
+}
+.qr-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.qr-actions button {
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--gold);
+  background: rgba(201, 162, 39, 0.15);
+  color: var(--gold-hi);
+  cursor: pointer;
+}
+.qr-actions button:hover {
+  background: rgba(201, 162, 39, 0.35);
+}
+.qr-actions button.round {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 16px;
+  line-height: 1;
+}
+.qr-actions button.round:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.qr-size {
+  gap: 8px;
+}
+/* Folded: only the rune stone (and the status dot) shows; a click unfolds. */
+.qr-icon-wrap {
+  display: none;
+  position: relative;
+}
+.qr-icon {
+  display: block;
+  width: 110px;
+  height: 110px;
+  cursor: pointer;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.6));
+}
+.qr-icon-wrap .dot {
+  position: absolute;
+  right: 10px;
+  bottom: 14px;
+  border: 1.5px solid #1a1208;
+}
+.qr.collapsed {
+  padding: 0;
+  gap: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+.qr.collapsed .qr-icon-wrap {
+  display: block;
+}
+.qr.collapsed .qr-small,
+.qr.collapsed .qr-meta {
+  display: none;
+}
+.qr .hint {
+  margin: 0;
+}
+
+/* Full-screen QR: charcoal backdrop, big QR, room code in the margin below. */
+#qr-full {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(22, 18, 12, 0.94);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.42s ease,
+    visibility 0s linear 0.42s;
+}
+#qr-full.open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.42s ease;
+}
+#qr-full.closing {
+  opacity: 0;
+  visibility: visible;
+}
+.qr-full-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4vh;
+}
+.qr-big {
+  width: min(66vh, 66vw);
+  height: min(66vh, 66vw);
+  padding: 2vh;
+  box-sizing: border-box;
+  background: #f7efd8;
+  border: 4px solid var(--gold);
+  border-radius: 12px;
+  transform-origin: 0 0;
+  transition: transform 0.42s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+.qr-full-margin {
+  text-align: center;
+  color: var(--gold-hi);
+}
+.qr-full-room {
+  font-size: 9vh;
+  font-weight: bold;
+  letter-spacing: 1.6vh;
+  color: #fff3c4;
+  text-shadow: 0 0 20px rgba(241, 210, 113, 0.5);
+  line-height: 1;
+}
+.qr-full-sub {
+  margin-top: 1.5vh;
+  font-size: 2.4vh;
+  opacity: 0.85;
+}
+.qr-full-offline {
+  display: none;
+  color: #ff7b7b;
+  font-weight: bold;
+}
+.qr-full-close-hint {
+  margin-top: 2.2vh;
+  font-size: 2vh;
+  opacity: 0.6;
+}
+.qr-full-close-hint kbd {
+  font-family: inherit;
+  padding: 0 0.6vh;
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+}
+#qr-close {
+  position: absolute;
+  top: 2vh;
+  right: 2vh;
+  width: 6vh;
+  height: 6vh;
+  font-size: 3vh;
+  line-height: 1;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+  background: rgba(201, 162, 39, 0.15);
+  color: var(--gold-hi);
+  cursor: pointer;
+}
+#qr-close:hover {
+  background: rgba(201, 162, 39, 0.35);
+}
+#qr-full[data-status="offline"] .qr-full-offline,
+#qr-full[data-status="connecting"] .qr-full-offline,
+#qr-full[data-status="unconfigured"] .qr-full-offline {
+  display: inline;
+}
+#qr-full[data-status="offline"] .qr-big,
+#qr-full[data-status="connecting"] .qr-big,
+#qr-full[data-status="unconfigured"] .qr-big {
+  filter: grayscale(1) opacity(0.4);
+}
+
+/* While the ending is up: the QR widget shows the Mystica code (label in gold) and the
+   moongate is a portal. Amber-gold instead of blue (Bobby 2026-10-17: "the portal will change
+   to a different color"): the gradient, the breathing ring and the swirl are restated in amber
+   (a hue-rotate filter would turn the gold box-shadow blue along with the rest), the swirl runs
+   faster, and the widget floats above the ending's charcoal backdrop (#end-full is z 50, the
+   cursors 60), or the students could not see what they are steering into. */
+[data-widget="qr"][data-qrmode="mystica"] #qr-room,
+#qr-full[data-qrmode="mystica"] .qr-full-room {
+  color: var(--gold-hi);
+}
+body.end-open [data-widget="moongate"] {
+  z-index: 52;
+}
+[data-widget="moongate"].portal .moongate {
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    #fff8e1 0%,
+    #ffd980 22%,
+    #f2a93b 40%,
+    #d9741a 62%,
+    #6e3708 85%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 0 0.4vh var(--gold-hi),
+    0 0 3vh var(--gold),
+    0 0 40px 14px rgba(255, 184, 64, 0.55),
+    inset 0 0 40px rgba(255, 250, 220, 0.55);
+  animation-duration: 1.4s;
+}
+[data-widget="moongate"].portal .moongate::before {
+  border-color: rgba(255, 226, 150, 0.9);
+  animation-duration: 1.4s;
+}
+[data-widget="moongate"].portal .moongate::after {
+  background: conic-gradient(from 0deg, transparent 0%, rgba(255, 240, 200, 0.95) 12%, transparent 28%);
+  animation-duration: 1.2s;
+}
+
+/* The ending: same charcoal backdrop as the full-screen QR, a headline above the code,
+   the Mystica host below. vh units on purpose: readable through a 720p stream. */
+#end-full {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(22, 18, 12, 0.94);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.42s ease,
+    visibility 0s linear 0.42s;
+}
+#end-full.open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.42s ease;
+}
+.end-card {
+  display: grid;
+  justify-items: center;
+  gap: 2.4vh;
+}
+.end-head {
+  font-size: 7vh;
+  line-height: 1;
+  color: var(--gold-hi);
+  text-shadow: 0 0.3vh 0 var(--ink);
+  letter-spacing: 0.02em;
+}
+.end-big {
+  width: min(58vh, 58vw);
+  aspect-ratio: 1;
+  background: #f7efd8;
+  border: 0.8vh solid var(--parchment);
+  border-radius: 1vh;
+  box-shadow: 0 1vh 4vh rgba(0, 0, 0, 0.6);
+}
+.end-big svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+#end-full[data-status="unconfigured"] .end-big {
+  filter: grayscale(1) opacity(0.4);
+}
+.end-margin {
+  text-align: center;
+  color: var(--parchment);
+}
+.end-sub {
+  font-size: 2.4vh;
+}
+.end-close-hint {
+  margin-top: 1.2vh;
+  font-size: 1.8vh;
+  opacity: 0.7;
+}
+.end-close-hint kbd {
+  font: inherit;
+  padding: 0 0.6vh;
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+}
+#end-close {
+  position: absolute;
+  top: 2vh;
+  right: 2vh;
+  width: 6vh;
+  height: 6vh;
+  font-size: 3vh;
+  line-height: 1;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+  background: rgba(201, 162, 39, 0.15);
+  color: var(--gold-hi);
+  cursor: pointer;
+}
+#end-close:hover {
+  background: rgba(201, 162, 39, 0.35);
+}
+
+/* 5. Backpack + gump */
+.backpack {
+  padding: 0;
+}
+#pack {
+  display: block;
+  width: 120px;
+  height: 120px;
+  cursor: pointer;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.6));
+  transition: filter 0.15s, transform 0.15s;
+}
+.backpack.hot #pack {
+  filter: drop-shadow(0 0 18px #f1d271) brightness(1.2);
+  transform: scale(1.06);
+}
+.pack-badge {
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 2px solid #1a1208;
+  background: var(--gold);
+  color: #1a1208;
+  font-size: 13px;
+  font-weight: bold;
+}
+.pack-badge.empty {
+  display: none;
+}
+
+/* 7. Open backpack: a bordered space seen from above. Own widget, stays open. */
+.gump {
+  display: none;
+  width: 260px; /* a bit wider than the ankh frame; interior is 236 x 190 */
+  z-index: 30;
+  /* Border art later: swap this for border-image on a nine-slice PNG/SVG. */
+  border: 4px solid #2a180a;
+  border-radius: 12px;
+  background: linear-gradient(160deg, #7a5230, #55371c);
+  box-shadow:
+    0 16px 44px rgba(0, 0, 0, 0.65),
+    inset 0 0 0 2px rgba(201, 162, 39, 0.4);
+  color: var(--gold-hi);
+}
+.gump.open {
+  display: block;
+}
+.gump.pop {
+  animation: gump-pop 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes gump-pop {
+  from {
+    transform: scale(0.85);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.gump-count {
+  margin-left: auto;
+  margin-right: 10px;
+  font-variant: normal;
+  letter-spacing: 0;
+  opacity: 0.85;
+}
+.gump .hint {
+  margin: 0 10px 8px;
+}
+.gump-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+  border-bottom: 2px dashed rgba(201, 162, 39, 0.5);
+}
+.gump-title button {
+  font: inherit;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  background: rgba(201, 162, 39, 0.15);
+  color: var(--gold-hi);
+  padding: 0 7px;
+  cursor: pointer;
+}
+.gump-items {
+  position: relative;
+  width: 236px;
+  height: 190px;
+  margin: 8px;
+  border-radius: 8px;
+  /* looking down into the pack: lit middle, dark leather rim, stitched inner edge */
+  background:
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.07) 0 6px, transparent 6px 12px),
+    radial-gradient(ellipse at 50% 45%, #6e4a26 0%, #56371a 60%, #3a2410 100%);
+  box-shadow:
+    inset 0 0 30px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 3px #2a180a;
+  outline: 2px dashed rgba(201, 162, 39, 0.45);
+  outline-offset: -9px;
+}
+
+/* Reagents */
+#items {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+/* Trinkets (trinkets.ts): knick-knacks that do nothing. Same box as a reagent, no glitter rim
+   (the rim means "this counts"), a soft shadow so they read as objects on the floor. */
+#trinkets {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  pointer-events: none;
+}
+.trinket {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(60px * var(--stage));
+  height: calc(60px * var(--stage));
+  pointer-events: auto;
+  cursor: grab;
+  will-change: transform;
+  --grab: #f1d271;
+}
+.trinket .art {
+  position: absolute;
+  inset: calc(5px * var(--stage));
+  width: calc(50px * var(--stage));
+  height: calc(50px * var(--stage));
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.55));
+  transition: transform 0.12s;
+}
+.trinket .name {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: calc(12px * var(--stage));
+  font-variant: small-caps;
+  letter-spacing: 1px;
+  color: #fff3c4;
+  text-shadow: 0 1px 2px #000;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+.trinket:hover .name,
+.trinket.grabbed .name {
+  opacity: 1;
+}
+.trinket.grabbed .art {
+  transform: scale(1.15);
+  filter: drop-shadow(0 0 8px var(--grab)) drop-shadow(0 6px 8px rgba(0, 0, 0, 0.6));
+}
+.trinket.batted {
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.trinket.lifted {
+  filter: drop-shadow(0 18px 10px rgba(0, 0, 0, 0.45));
+  pointer-events: none;
+}
+.reagent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(60px * var(--stage));
+  height: calc(60px * var(--stage));
+  pointer-events: auto;
+  cursor: grab;
+  will-change: transform;
+  --grab: #f1d271;
+  --glit: #f1d271; /* per-reagent rim hue, set from REAGENTS */
+}
+/* Inside the bag the bag's own transform does the scaling. */
+.gump {
+  --stage: 1;
+}
+/* Art and its two rim copies are stacked; a 5 px margin keeps the rim inside the
+   box so the shimmer mask does not clip it. */
+.reagent img {
+  position: absolute;
+  inset: calc(5px * var(--stage));
+  width: calc(50px * var(--stage));
+  height: calc(50px * var(--stage));
+  transition: transform 0.12s;
+}
+.reagent .art {
+  z-index: 2;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.7));
+}
+/* Contour rim: eight zero-blur drop-shadows in the hue trace the alpha edge of
+   the copy; its body is hidden under the art, so only the rim shows. */
+/* Chained drop-shadows compound (each one shadows the previous result), so four
+   offsets already give a rim about twice their size; more would make a thick band.
+   Offsets were 0.8 / 1.3 px; Bobby asked for 1.5x thicker. */
+.reagent .glit {
+  z-index: 1;
+  pointer-events: none;
+  filter: drop-shadow(calc(1.2px * var(--stage)) 0 0 var(--glit)) drop-shadow(calc(-1.2px * var(--stage)) 0 0 var(--glit))
+    drop-shadow(0 calc(1.2px * var(--stage)) 0 var(--glit)) drop-shadow(0 calc(-1.2px * var(--stage)) 0 var(--glit));
+}
+.reagent .glit-a {
+  opacity: 0.35; /* steady thin rim */
+}
+/* Shimmer: the slightly thicker rim seen through a random 8×8 chessboard of
+   four shades (--board, generated per reagent in quest.ts), tiled at 7 px
+   squares, panning diagonally and wrapping. Only the rim shows it, so the shade
+   changes square by square along the contour. */
+.reagent .glit-b {
+  filter: drop-shadow(calc(2px * var(--stage)) 0 0 var(--glit)) drop-shadow(calc(-2px * var(--stage)) 0 0 var(--glit))
+    drop-shadow(0 calc(2px * var(--stage)) 0 var(--glit)) drop-shadow(0 calc(-2px * var(--stage)) 0 var(--glit)) brightness(1.15);
+  -webkit-mask-image: var(--board);
+  mask-image: var(--board);
+  -webkit-mask-size: calc(56px * var(--stage)) calc(56px * var(--stage));
+  mask-size: calc(56px * var(--stage)) calc(56px * var(--stage));
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  animation: glitter 10s linear infinite;
+  animation-delay: inherit;
+}
+@keyframes glitter {
+  from {
+    -webkit-mask-position: 0 0;
+    mask-position: 0 0;
+  }
+  to {
+    -webkit-mask-position: 56px 56px;
+    mask-position: 56px 56px;
+  }
+}
+.reagent .name {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: calc(12px * var(--stage));
+  color: var(--gold-hi);
+  text-shadow: 0 0 4px #000, 0 0 8px #000;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+/* Charges badge: kept in the DOM for the phone stock row logic, but never shown in the bag (Bobby: ugly;
+   a depleted reagent announces itself by flying out). */
+.reagent .charges {
+  display: none;
+  position: absolute;
+  right: calc(-4px * var(--stage));
+  top: calc(-4px * var(--stage));
+  min-width: calc(18px * var(--stage));
+  height: calc(18px * var(--stage));
+  padding: 0 calc(4px * var(--stage));
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1.5px solid #1a1208;
+  background: var(--gold);
+  color: #1a1208;
+  font-size: calc(11px * var(--stage));
+  font-weight: bold;
+  pointer-events: none;
+}
+.reagent .charges:empty {
+  display: none;
+}
+/* A spent limited reagent (mandrake root, spider's silk) is off the overlay until it returns. */
+/* Level 1 antagonists. Batted by Ginger: the slide is a transition (the wobble is a WAAPI
+   rotate on the images). Lifted by a bird: it hangs in the air, shadow far below. */
+.reagent.batted {
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.reagent.lifted {
+  filter: drop-shadow(0 18px 10px rgba(0, 0, 0, 0.45));
+  pointer-events: none;
+}
+.reagent.gone {
+  display: none;
+}
+.reagent.spent {
+  animation: spent 0.5s ease-out;
+}
+@keyframes spent {
+  0% {
+    filter: brightness(2.2);
+  }
+  40% {
+    filter: brightness(1.6);
+  }
+  100% {
+    filter: none;
+  }
+}
+.reagent:hover .name,
+.reagent.grabbed .name {
+  opacity: 1;
+}
+.reagent.grabbed img {
+  transform: scale(1.18);
+}
+.reagent.grabbed .art {
+  filter: drop-shadow(0 0 10px var(--grab)) drop-shadow(0 6px 8px rgba(0, 0, 0, 0.7));
+}
+.reagent.collected .art {
+  animation: collected 0.7s ease-out;
+}
+@keyframes collected {
+  0% {
+    transform: scale(1.5);
+    filter: drop-shadow(0 0 20px #f1d271);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 6. Quest counter + completion */
+.quest {
+  min-width: 300px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(20, 14, 8, 0.88);
+  border: 1px solid var(--gold);
+  color: var(--gold-hi);
+  font-size: 13px;
+}
+.quest-level {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  font-variant: small-caps;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+/* Level 0 (levels.ts): the bare stage. The pack, the open bag, the goals card and the loose
+   reagents wait for the first ankh awakening; the ankh pulses faintly gold as the invitation. */
+body.level-0 [data-widget="backpack"],
+body.level-0 [data-widget="gump"],
+body.level-0 [data-widget="quest"],
+body.level-0 #items {
+  display: none !important;
+}
+/* The goals card is level 1's alone: from level 2 on it is gone (Bobby 2026-10-03, less on the
+   stage); the spell strip and the horde board show progress only while something happens. */
+body.level-2 [data-widget="quest"] {
+  display: none !important;
+}
+body.level-0 .frame:not(.keyed)::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 4px;
+  pointer-events: none;
+  animation: ankh-invite 3s ease-in-out infinite;
+}
+@keyframes ankh-invite {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(241, 210, 113, 0);
+  }
+  50% {
+    box-shadow: 0 0 44px 10px rgba(241, 210, 113, 0.45);
+  }
+}
+.quest-head b {
+  font-size: 20px;
+  color: #fff3c4;
+}
+#quest-list {
+  columns: 2;
+  margin: 6px 0 8px;
+  padding-left: 18px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+#quest-list li.got {
+  color: #43d17a;
+  text-decoration: line-through;
+}
+.quest-tally-head {
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: 0.6;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+}
+#quest-tally {
+  list-style: none;
+  margin: 2px 0 8px;
+  padding: 0;
+  font-size: 12.5px;
+}
+#quest-tally li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#quest-tally li b {
+  margin-left: auto;
+  color: #fff3c4;
+}
+#quest-tally li.none {
+  opacity: 0.5;
+  font-style: italic;
+}
+#quest-tally .swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+#quest-banner-sub {
+  display: block;
+  margin-top: 0.6vh;
+  font-size: 2.6vh;
+  font-variant: normal;
+  letter-spacing: 1px;
+  opacity: 0.85;
+}
+#quest-banner-sub:empty {
+  display: none;
+}
+#quest-banner {
+  position: fixed;
+  top: 12vh;
+  left: 50%;
+  transform: translateX(-50%) scale(0.8);
+  z-index: 45;
+  display: flex;
+  align-items: center; /* stars stay on the text block's vertical middle */
+  justify-content: center;
+  gap: 2.5vh;
+  max-width: 70vw;
+  padding: 2.4vh 4vw;
+  border: 3px double var(--gold);
+  border-radius: 12px;
+  background: rgba(20, 14, 8, 0.92);
+  color: #fff3c4;
+  font-size: 4.5vh;
+  font-variant: small-caps;
+  letter-spacing: 2px;
+  text-shadow: 0 0 24px rgba(241, 210, 113, 0.7);
+  box-shadow: 0 0 60px rgba(241, 210, 113, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+#quest-banner .banner-text {
+  text-align: center;
+  line-height: 1.15;
+  max-width: 48vw; /* wraps to several lines if needed, stays centered */
+}
+#quest-banner .banner-star {
+  flex: none;
+  color: var(--gold-hi);
+}
+/* Ginger cat perched on the top-right border, paws on the frame. */
+#quest-banner .banner-cat {
+  position: absolute;
+  right: 2.5vw;
+  bottom: 100%;
+  width: 13vh;
+  height: 13vh;
+  margin-bottom: -2.4vh; /* overlaps the border so it sits on it */
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
+}
+#quest-banner.show {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+body.quest-complete #pack {
+  filter: drop-shadow(0 0 24px #f1d271) brightness(1.25);
+}
+
+/* Moongate teleport star: above everything. One 0.52 s burst, 0 -> 90 px
+   (1.5 reagents) -> 0, turning 80° from a random start angle (--rot0). It has
+   to read as light, not an object: additive bloom behind it, white core glow,
+   cool halo, brightness flash at the peak. */
+.tstar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 70;
+  width: calc(90px * var(--stage));
+  height: calc(90px * var(--stage));
+  margin: calc(-45px * var(--stage)) 0 0 calc(-45px * var(--stage));
+  pointer-events: none;
+  --rot0: 0deg;
+}
+.tstar::before {
+  /* bloom: a soft additive disc that flashes with the burst */
+  content: "";
+  position: absolute;
+  inset: -70%;
+  border-radius: 50%;
+  /* a halo, not a fill: kept faint under the star so the facets stay visible */
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, rgba(205, 228, 255, 0.3) 22%, rgba(120, 170, 255, 0.16) 45%, rgba(120, 170, 255, 0) 65%);
+  mix-blend-mode: plus-lighter;
+  animation: tbloom 0.52s ease-out forwards;
+}
+.tstar svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: center;
+  /* glow comes from the shadows and the bloom; brightness stays near 1 so the
+     facet gradient is not blown out to flat white */
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 14px rgba(190, 220, 255, 0.9)) brightness(1.05);
+  animation: tstar 0.52s forwards;
+}
+@keyframes tstar {
+  0% {
+    transform: scale(0) rotate(var(--rot0));
+    animation-timing-function: cubic-bezier(0.1, 0.85, 0.3, 1); /* burst out */
+  }
+  50% {
+    transform: scale(1) rotate(calc(var(--rot0) + 40deg));
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 26px rgba(190, 220, 255, 1)) brightness(1.15);
+    animation-timing-function: cubic-bezier(0.7, 0, 0.9, 0.3); /* collapse */
+  }
+  100% {
+    transform: scale(0) rotate(calc(var(--rot0) + 80deg));
+  }
+}
+@keyframes tbloom {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  45% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
+
+/* ---- Spells ---- */
+#night {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 40%, rgba(8, 14, 40, 0.55) 0%, rgba(3, 6, 20, 0.88) 100%);
+  opacity: 0;
+  transition: opacity 1.2s;
+}
+#night.on {
+  opacity: 1;
+}
+body.night .cursor {
+  filter: drop-shadow(0 0 6px currentColor) drop-shadow(0 0 18px currentColor);
+}
+/* Night Sight: the moonglow wisps (a canvas above the night layer, under the sparkles and cursors) and the scoreboard. */
+#moonglow {
+  position: fixed;
+  inset: 0;
+  z-index: 57;
+  pointer-events: none;
+}
+#moonglow-board,
+#horde-board,
+#spell-strip {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  z-index: 46;
+  min-width: 220px;
+  padding: 8px 16px 10px;
+  border: 1px solid #8fdcff;
+  border-radius: 10px;
+  background: rgba(10, 14, 24, 0.88);
+  color: #e4f5ff;
+  font-size: calc(14px * var(--stage));
+  box-shadow: 0 0 24px rgba(79, 195, 255, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.4s,
+    transform 0.4s;
+}
+#moonglow-board.show,
+#horde-board.show,
+#spell-strip.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+#moonglow-board .mg-title,
+#horde-board .mg-title,
+#spell-strip .mg-title {
+  text-align: center;
+  font-variant: small-caps;
+  letter-spacing: 2px;
+  color: #bfe9ff;
+  margin-bottom: 4px;
+}
+#moonglow-list,
+#horde-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+#moonglow-list li,
+#horde-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#moonglow-list li b,
+#horde-list li b {
+  margin-left: auto;
+  color: #fff;
+}
+#moonglow-list li.none,
+#moonglow-list li.left,
+#horde-list li.none,
+#horde-list li.left {
+  opacity: 0.6;
+  font-style: italic;
+  justify-content: center;
+  font-size: 0.85em;
+}
+#moonglow-list .swatch,
+#horde-list .swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+/* The horde's board: bone-coloured, with the wave's time draining in a bar. Both boards up: the moonglow one steps down. */
+#horde-board {
+  border-color: #b8f0a0;
+  box-shadow: 0 0 24px rgba(120, 220, 120, 0.3);
+}
+#horde-board .mg-title {
+  color: #d8f5c8;
+}
+#horde-board .hb-bar {
+  height: 4px;
+  margin-top: 6px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+#horde-board .hb-bar i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #b8f0a0, #5aff5a);
+}
+#moonglow-board.show ~ #horde-board.show {
+  top: 180px;
+}
+/* Level 2's spell strip (levels.ts): gold, the five spells in a row, the cast ones lit in their first
+   caster's colour; up for a few seconds after each cast. Under the moonglow board when both are up. */
+#spell-strip {
+  border-color: var(--gold);
+  box-shadow: 0 0 24px rgba(241, 210, 113, 0.35);
+  color: #fff3c4;
+  font-size: calc(16px * var(--stage));
+  white-space: nowrap;
+}
+#spell-strip .mg-title {
+  color: var(--gold);
+}
+#spell-strip-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+}
+#spell-strip-list li {
+  opacity: 0.45;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+}
+#spell-strip-list li.got {
+  opacity: 1;
+  color: #fff;
+  text-shadow: 0 0 10px var(--who, var(--gold));
+}
+#spell-strip-list li.got::before {
+  content: "✓ ";
+  color: var(--who, var(--gold));
+}
+#moonglow-board.show ~ #spell-strip.show {
+  top: 180px;
+}
+#flash {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+  background: #fff;
+  opacity: 0;
+}
+#flash.on {
+  animation: flash 0.4s ease-out;
+}
+@keyframes flash {
+  0% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+#fx {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  pointer-events: none;
+}
+#fx .bolt {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 8px #9fd0ff) drop-shadow(0 0 24px #4fa0ff);
+  animation: boltfade 0.7s ease-out forwards;
+}
+@keyframes boltfade {
+  0%,
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+/* Create Food: the dish and the walking cat live in #fx (above the cursors). */
+#fx .food {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(56px * var(--stage));
+  height: calc(56px * var(--stage));
+  margin: calc(-28px * var(--stage)) 0 0 calc(-28px * var(--stage));
+}
+#fx .food img {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+  transition:
+    transform 2.4s ease-in,
+    opacity 2.4s ease-in;
+}
+#fx .food.eaten img {
+  transform: scale(0.15);
+  opacity: 0;
+}
+/* A feast (cast while the horde was thick): it glows, the ultimate follows the meal. */
+#fx .food.ult img {
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 14px #ffb347);
+  animation: feast-glow 0.8s ease-in-out infinite alternate;
+}
+@keyframes feast-glow {
+  from {
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 8px #ffb347);
+  }
+  to {
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 22px #ffb347) brightness(1.2);
+  }
+}
+#fx .cat-walk {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(96px * var(--stage));
+  height: calc(96px * var(--stage));
+  pointer-events: auto; /* the Seer can click him */
+  cursor: pointer;
+  will-change: transform;
+}
+#fx .cat-walk .cat-art,
+#fx .cat-walk .cat-art img,
+#fx .cat-walk .cat-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+#fx .cat-walk .cat-art {
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.5));
+}
+#fx .cat-walk.flip .cat-art {
+  transform: scaleX(-1);
+}
+/* In the dark his eyes glow neon green (spooky), the slit pupils stay dark. */
+body.night #fx .cat-walk .eyes {
+  filter: drop-shadow(0 0 3px #39ff14) drop-shadow(0 0 9px #39ff14);
+  animation: eye-glow 1.8s ease-in-out infinite;
+}
+body.night #fx .cat-walk .eyes ellipse[fill="#8fd16b"] {
+  fill: #39ff14;
+}
+@keyframes eye-glow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+#fx .cat-walk .bubble {
+  position: absolute;
+  left: 70%;
+  top: -12%;
+  padding: 2px 9px;
+  border-radius: 10px;
+  background: #fff3c4;
+  color: #1a1208;
+  font-size: calc(14px * var(--stage));
+  font-variant: small-caps;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  pointer-events: none;
+}
+#fx .cat-walk.meow .bubble {
+  opacity: 1;
+  transform: translateY(0);
+}
+#fx .cat-walk.startled .cat-art {
+  animation: startled 0.5s ease-out;
+}
+/* Playing (level 1): creeping low, a hop at the pounce, sitting up between rounds.
+   Individual properties, so they compose with the flip's transform. */
+#fx .cat-walk.stalk .cat-art {
+  scale: 1 0.86;
+  transition: scale 0.3s;
+}
+#fx .cat-walk.pounce .cat-art {
+  animation: pounce 0.38s ease-out;
+}
+#fx .cat-walk.sit .cat-art {
+  scale: 0.95 1.05;
+  transition: scale 0.3s;
+}
+/* The charge-and-bolt visit: flat before the charge, stretched while running, braking at the skid. */
+#fx .cat-walk.crouch .cat-art {
+  scale: 1.04 0.76;
+  transition: scale 0.25s;
+}
+#fx .cat-walk.charge .cat-art {
+  scale: 1.1 0.92;
+  transition: scale 0.15s;
+}
+#fx .cat-walk.skid .cat-art {
+  scale: 0.88 1.1;
+  transition: scale 0.12s;
+}
+/* Perched on the reagent after the charge: sitting up, a couple of tail flicks (the tail is a
+   <g class="tail"> in the inlined art; its base is the bottom-left corner of its box). */
+#fx .cat-walk.perch .cat-art {
+  scale: 0.96 1.04;
+  transition: scale 0.2s;
+}
+#fx .cat-walk.perch .tail {
+  transform-box: fill-box;
+  transform-origin: 0% 100%;
+  animation: tail-flick 0.9s ease-in-out 2;
+}
+@keyframes tail-flick {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+  25% {
+    rotate: -18deg;
+  }
+  50% {
+    rotate: 6deg;
+  }
+  75% {
+    rotate: -12deg;
+  }
+}
+/* Purring on the ankh (cat.ts): a warm glow and a slow breathing swell over the sitting pose. */
+#fx .cat-walk.purr .cat-art {
+  filter: drop-shadow(0 0 14px rgba(255, 220, 120, 0.9));
+  animation: purr 0.6s ease-in-out infinite alternate;
+}
+@keyframes purr {
+  from {
+    scale: 0.95 1.05;
+  }
+  to {
+    scale: 0.99 1.09;
+  }
+}
+@keyframes pounce {
+  0% {
+    translate: 0 0;
+  }
+  45% {
+    translate: 0 calc(-30px * var(--stage));
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+/* A bird out stealing (signpost.ts): the perched one hides, this flyer crosses the stage. */
+#fx .bird-flyer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(34px * var(--stage));
+  height: calc(29px * var(--stage));
+  margin: calc(-14.5px * var(--stage)) 0 0 calc(-17px * var(--stage));
+  pointer-events: none;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.4));
+}
+#fx .bird-flyer svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+#fx .bird-flyer .art {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+#fx .bird-flyer .wing {
+  transform-box: fill-box;
+  transform-origin: 100% 100%;
+  animation: flap 0.14s ease-in-out infinite alternate;
+}
+@keyframes startled {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.25) translateY(-22px) rotate(-10deg);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+/* Level 3: the horde (horde.ts). Skeletons and ghouls in #fx, limbs swinging while they
+   walk; in the dark the body is a silhouette and only the eyes glow (Night Sight lifts it). */
+#fx .monster {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(64px * var(--stage));
+  height: calc(84px * var(--stage));
+  pointer-events: none;
+  will-change: transform;
+}
+#fx .monster .art {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.55));
+}
+#fx .monster .art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+#fx .monster.flip .art {
+  transform: scaleX(-1);
+}
+#fx .monster .leg,
+#fx .monster .arm {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+}
+#fx .monster.walking .leg-l,
+#fx .monster.walking .arm-r {
+  animation: limb 0.5s ease-in-out infinite alternate;
+}
+#fx .monster.walking .leg-r,
+#fx .monster.walking .arm-l {
+  animation: limb 0.5s ease-in-out infinite alternate-reverse;
+}
+#fx .monster.smitten.walking .leg-l,
+#fx .monster.smitten.walking .leg-r,
+#fx .monster.smitten.walking .arm-l,
+#fx .monster.smitten.walking .arm-r {
+  animation-duration: 0.28s;
+}
+@keyframes limb {
+  from {
+    rotate: -16deg;
+  }
+  to {
+    rotate: 16deg;
+  }
+}
+#fx .monster .eyes {
+  animation: eye-glow 1.4s ease-in-out infinite;
+}
+#fx .monster.skeleton .eyes {
+  filter: drop-shadow(0 0 2px #ff3b3b);
+}
+#fx .monster.ghoul .eyes {
+  filter: drop-shadow(0 0 2px #d8ff5a);
+}
+body.night #fx .monster .body {
+  filter: brightness(0.2);
+}
+body.night #fx .monster.skeleton .eyes {
+  filter: drop-shadow(0 0 3px #ff3b3b) drop-shadow(0 0 9px #ff3b3b);
+}
+body.night #fx .monster.ghoul .eyes {
+  filter: drop-shadow(0 0 3px #d8ff5a) drop-shadow(0 0 9px #d8ff5a);
+}
+#fx .monster.born .art {
+  animation: mon-born 0.55s ease-out;
+}
+@keyframes mon-born {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+#fx .monster.born.flip .art {
+  animation: mon-born-flip 0.55s ease-out;
+}
+@keyframes mon-born-flip {
+  from {
+    opacity: 0;
+    transform: scaleX(-0.3) scaleY(0.3);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(-1);
+  }
+}
+#fx .monster.hurt .art {
+  animation: mon-hurt 0.3s ease-out;
+}
+@keyframes mon-hurt {
+  0% {
+    filter: brightness(3) drop-shadow(0 0 10px #fff);
+  }
+  100% {
+    filter: brightness(1) drop-shadow(0 6px 8px rgba(0, 0, 0, 0.55));
+  }
+}
+#fx .monster.slain .art {
+  animation: mon-slain 0.6s ease-in forwards;
+}
+@keyframes mon-slain {
+  0% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5) rotate(25deg) translateY(30px);
+  }
+}
+#fx .monster.banished .art {
+  animation: mon-banish 0.4s ease-in forwards;
+}
+@keyframes mon-banish {
+  to {
+    opacity: 0;
+    transform: scale(0.1) rotate(180deg);
+  }
+}
+#fx .monster.gathered .art {
+  filter: brightness(1.5) saturate(1.5) drop-shadow(0 0 12px #8fdcff);
+}
+#fx .monster.laden .art {
+  animation: mon-laden 0.8s ease-in-out infinite alternate;
+}
+@keyframes mon-laden {
+  from {
+    rotate: -4deg;
+  }
+  to {
+    rotate: 4deg;
+  }
+}
+/* Stunned: stars circle above the head. */
+#fx .monster .stars {
+  position: absolute;
+  left: 50%;
+  top: calc(-10px * var(--stage));
+  transform: translateX(-50%);
+  color: #ffe9b0;
+  font-size: calc(13px * var(--stage));
+  letter-spacing: 2px;
+  white-space: nowrap;
+  text-shadow: 0 0 6px #ffe9b0;
+  opacity: 0;
+}
+#fx .monster.stunned .stars {
+  opacity: 1;
+  animation: stars-spin 0.9s linear infinite;
+}
+@keyframes stars-spin {
+  0% {
+    transform: translateX(-50%) scaleX(1);
+  }
+  50% {
+    transform: translateX(-50%) scaleX(-1);
+  }
+  100% {
+    transform: translateX(-50%) scaleX(1);
+  }
+}
+/* Charmed by Ginger: hearts float up as it runs for the gate. */
+#fx .monster .heart {
+  position: absolute;
+  left: 50%;
+  top: 10%;
+  --dx: 0px;
+  color: #ff6f91;
+  font-size: calc(20px * var(--stage));
+  text-shadow: 0 0 8px #ff6f91;
+  animation: heart-up 1.3s ease-out forwards;
+}
+@keyframes heart-up {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 0) scale(0.6);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-60px * var(--stage))) scale(1.2);
+  }
+}
+/* A reagent in a monster's hands. */
+.reagent.stolen .art {
+  filter: drop-shadow(0 0 6px #ff3b3b);
+}
+/* Over a catch: a little hop. */
+#fx .monster.gloat .art {
+  animation: mon-gloat 0.5s ease-out;
+}
+@keyframes mon-gloat {
+  30% {
+    transform: translateY(-14px) scale(1.1);
+  }
+}
+#fx .monster.gloat.flip .art {
+  animation: mon-gloat-flip 0.5s ease-out;
+}
+@keyframes mon-gloat-flip {
+  30% {
+    transform: scaleX(-1) translateY(-14px) scale(1.1);
+  }
+  100% {
+    transform: scaleX(-1);
+  }
+}
+/* The daemon: bigger, wings that beat, a hurl when it throws. */
+#fx .monster.daemon {
+  width: calc(90px * var(--stage));
+  height: calc(118px * var(--stage));
+}
+#fx .monster.daemon .wing {
+  transform-box: fill-box;
+}
+#fx .monster.daemon .wl {
+  transform-origin: 100% 40%;
+  animation: dwing-l 0.7s ease-in-out infinite alternate;
+}
+#fx .monster.daemon .wr {
+  transform-origin: 0 40%;
+  animation: dwing-r 0.7s ease-in-out infinite alternate;
+}
+@keyframes dwing-l {
+  from {
+    rotate: 14deg;
+  }
+  to {
+    rotate: -18deg;
+  }
+}
+@keyframes dwing-r {
+  from {
+    rotate: -14deg;
+  }
+  to {
+    rotate: 18deg;
+  }
+}
+#fx .monster.daemon .eyes {
+  filter: drop-shadow(0 0 3px #ffd23f);
+}
+body.night #fx .monster.daemon .eyes {
+  filter: drop-shadow(0 0 3px #ffd23f) drop-shadow(0 0 9px #ff9a1f);
+}
+#fx .monster.daemon.hurl .art {
+  animation: mon-hurl 0.35s ease-out;
+}
+@keyframes mon-hurl {
+  40% {
+    transform: scale(1.12) translateY(-6px);
+  }
+}
+#fx .monster.daemon.hurl.flip .art {
+  animation: mon-hurl-flip 0.35s ease-out;
+}
+@keyframes mon-hurl-flip {
+  40% {
+    transform: scaleX(-1) scale(1.12) translateY(-6px);
+  }
+  100% {
+    transform: scaleX(-1);
+  }
+}
+/* Fireballs: slow, bright, dodgeable; a cursor they touch becomes a ghost. */
+#fx .fireball {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(36px * var(--stage));
+  height: calc(36px * var(--stage));
+  margin: calc(-18px * var(--stage)) 0 0 calc(-18px * var(--stage));
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #fff6c0 0%, #ffb340 30%, #e8420a 62%, rgba(120, 20, 0, 0) 72%);
+  filter: drop-shadow(0 0 10px #ff7a00) drop-shadow(0 0 24px #ff3b00);
+  animation: flame 0.11s linear infinite alternate;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+#fx .fireball.out {
+  opacity: 0;
+}
+@keyframes flame {
+  from {
+    scale: 1 1;
+  }
+  to {
+    scale: 1.15 0.9;
+  }
+}
+/* Ghosts: the arrow goes faint and pale, and a sheet ghost (the wraith) floats about it,
+   glowing, murmuring "OooOOoo" now and then; the label says so too. */
+.cursor.ghost > svg {
+  opacity: 0.35;
+  filter: grayscale(1) brightness(1.8) drop-shadow(0 0 8px #bfe9ff);
+}
+.cursor.ghost .label {
+  color: #bfe9ff;
+  opacity: 0.9;
+}
+.cursor.ghost .label::before {
+  content: "☠ ";
+}
+.cursor .wraith {
+  position: absolute;
+  left: calc(-14px * var(--stage));
+  top: calc(-30px * var(--stage));
+  width: calc(60px * var(--stage));
+  height: calc(72px * var(--stage));
+  pointer-events: none;
+  animation: wraith-float 2.6s ease-in-out infinite;
+}
+.cursor .wraith svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0.88;
+  filter: drop-shadow(0 0 6px #dff3ff) drop-shadow(0 0 18px #7fc4ff);
+}
+.cursor .wraith .ooo {
+  position: absolute;
+  left: 60%;
+  top: calc(-16px * var(--stage));
+  white-space: nowrap;
+  font-size: calc(15px * var(--stage));
+  font-style: italic;
+  letter-spacing: 1px;
+  color: #eef6ff;
+  text-shadow:
+    0 0 6px #7fc4ff,
+    0 0 2px #000;
+  opacity: 0;
+  animation: wraith-ooo 5s ease-in-out infinite;
+}
+@keyframes wraith-float {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: -4deg;
+  }
+  50% {
+    translate: 4px -9px;
+    rotate: 4deg;
+  }
+}
+@keyframes wraith-ooo {
+  0%,
+  55%,
+  100% {
+    opacity: 0;
+    translate: 0 4px;
+  }
+  65%,
+  85% {
+    opacity: 1;
+    translate: 0 -4px;
+  }
+}
+/* The wandering healer: a hooded figure by the signpost, labelled. */
+#fx .healer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(60px * var(--stage));
+  height: calc(90px * var(--stage));
+  pointer-events: none;
+  will-change: transform;
+}
+#fx .healer svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.5));
+}
+#fx .healer.flip svg {
+  transform: scaleX(-1);
+}
+#fx .healer.walking svg {
+  animation: healer-step 0.5s ease-in-out infinite alternate;
+}
+#fx .healer.walking.flip svg {
+  animation: healer-step-flip 0.5s ease-in-out infinite alternate;
+}
+@keyframes healer-step {
+  from {
+    transform: rotate(-2deg);
+  }
+  to {
+    transform: rotate(2deg);
+  }
+}
+@keyframes healer-step-flip {
+  from {
+    transform: scaleX(-1) rotate(-2deg);
+  }
+  to {
+    transform: scaleX(-1) rotate(2deg);
+  }
+}
+#fx .healer .label {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: calc(12px * var(--stage));
+  font-variant: small-caps;
+  letter-spacing: 0.5px;
+  color: #e9d8a6;
+  text-shadow:
+    0 0 3px #000,
+    0 0 6px #000,
+    1px 1px 0 #000;
+}
+
+/* Bats (night): small, flapping, each on its own arc. */
+#fx .bat {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(28px * var(--stage));
+  height: calc(20px * var(--stage));
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.6));
+}
+#fx .bat svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+#fx .bat .wing {
+  transform-box: fill-box;
+}
+#fx .bat .wl {
+  transform-origin: 100% 50%;
+  animation: flap-l 0.14s ease-in-out infinite alternate;
+}
+#fx .bat .wr {
+  transform-origin: 0 50%;
+  animation: flap-r 0.14s ease-in-out infinite alternate;
+}
+@keyframes flap-l {
+  from {
+    rotate: 25deg;
+  }
+  to {
+    rotate: -35deg;
+  }
+}
+@keyframes flap-r {
+  from {
+    rotate: -25deg;
+  }
+  to {
+    rotate: 35deg;
+  }
+}
+/* Magic Arrow aiming: a dashed ring on the caster, then a beam with a reticle at its range. */
+#fx .aim {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+#fx .aim .aim-ring {
+  position: absolute;
+  width: calc(56px * var(--stage));
+  height: calc(56px * var(--stage));
+  left: calc(-28px * var(--stage));
+  top: calc(-28px * var(--stage));
+  border: 3px dashed var(--who);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--who);
+  animation: aim-spin 1.2s linear infinite;
+}
+#fx .aim .aim-beam {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: calc(-6px * var(--stage));
+  height: calc(12px * var(--stage));
+  width: var(--range, 600px);
+  transform-origin: 0 50%;
+  transform: rotate(var(--ang, 0deg));
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--who), rgba(255, 255, 255, 0));
+  box-shadow: 0 0 16px var(--who);
+  opacity: 0.65;
+}
+#fx .aim.aimed .aim-beam {
+  display: block;
+}
+#fx .aim.aimed .aim-beam::after {
+  content: "";
+  position: absolute;
+  right: calc(-14px * var(--stage));
+  top: calc(-8px * var(--stage));
+  width: calc(28px * var(--stage));
+  height: calc(28px * var(--stage));
+  border: 3px solid var(--who);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--who);
+}
+@keyframes aim-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* The last arrow of the volley charges: the ring and beam shake and a crescent grows ahead of the cursor. */
+#fx .aim .aim-crescent {
+  display: none;
+  position: absolute;
+  left: calc(-34px * var(--stage));
+  top: calc(-34px * var(--stage));
+  width: calc(68px * var(--stage));
+  height: calc(68px * var(--stage));
+  border-radius: 50%;
+  border: calc(5px * var(--stage)) solid transparent;
+  border-right-color: var(--who);
+  box-shadow: 0 0 16px var(--who);
+  transform: rotate(var(--ang, 0deg));
+  transform-origin: 50% 50%;
+}
+#fx .aim.charging .aim-crescent {
+  display: block;
+  animation: crescent-grow var(--charge-ms, 900ms) ease-in forwards;
+}
+@keyframes crescent-grow {
+  from {
+    opacity: 0;
+    scale: 0.3;
+    filter: brightness(1);
+  }
+  to {
+    opacity: 1;
+    scale: 1.7;
+    filter: brightness(1.9) drop-shadow(0 0 10px #fff);
+  }
+}
+#fx .aim.charging .aim-ring {
+  border-style: solid;
+  animation:
+    aim-spin 0.5s linear infinite,
+    aim-shake 0.07s linear infinite;
+}
+#fx .aim.charging .aim-beam {
+  opacity: 0.95;
+  animation: aim-shake 0.07s linear infinite;
+}
+@keyframes aim-shake {
+  0% {
+    translate: -2px 1px;
+  }
+  50% {
+    translate: 2px -1px;
+  }
+  100% {
+    translate: -1px -2px;
+  }
+}
+#fx .arrow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(70px * var(--stage));
+  height: calc(10px * var(--stage));
+  margin-top: calc(-5px * var(--stage));
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, currentColor 40%, #fff);
+  filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 0 20px currentColor);
+  transform-origin: 0 50%;
+  transition: transform 0.38s cubic-bezier(0.3, 0, 0.7, 1);
+}
+/* The charged arrow: wider, brighter, a crescent head, twice the hit radius (spells.ts). */
+#fx .arrow.big {
+  width: calc(120px * var(--stage));
+  height: calc(26px * var(--stage));
+  margin-top: calc(-13px * var(--stage));
+  background: linear-gradient(90deg, transparent, currentColor 35%, #fff 75%, #fff);
+  filter: drop-shadow(0 0 14px currentColor) drop-shadow(0 0 40px currentColor) brightness(1.3);
+}
+#fx .arrow.big::after {
+  content: "";
+  position: absolute;
+  right: calc(-12px * var(--stage));
+  top: calc(-9px * var(--stage));
+  width: calc(44px * var(--stage));
+  height: calc(44px * var(--stage));
+  border-radius: 50%;
+  border: calc(6px * var(--stage)) solid transparent;
+  border-right-color: #fff;
+  box-shadow: 0 0 16px currentColor;
+}
+/* Ginger's ultimate (horde.ts): everything under #fx goes dark; three beams sweep from him. */
+#ult {
+  position: fixed;
+  inset: 0;
+  z-index: 62;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transition: opacity 0.35s;
+}
+#ult.on {
+  opacity: 1;
+}
+#fx .ult-beams {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  animation: ult-spin var(--ms, 3000ms) linear forwards;
+  transition: opacity 0.5s;
+}
+#fx .ult-beams.fade {
+  opacity: 0;
+}
+#fx .ult-beams i {
+  position: absolute;
+  left: 0;
+  top: calc(-3px * var(--stage));
+  height: calc(6px * var(--stage));
+  width: 2600px;
+  transform-origin: 0 50%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #fff, #ffb347 18%, rgba(255, 179, 71, 0.6) 55%, rgba(255, 179, 71, 0));
+  box-shadow:
+    0 0 14px #ffb347,
+    0 0 40px #ff8c00;
+}
+#fx .ult-beams i:nth-child(2) {
+  transform: rotate(120deg);
+}
+#fx .ult-beams i:nth-child(3) {
+  transform: rotate(240deg);
+}
+@keyframes ult-spin {
+  from {
+    rotate: 0deg;
+  }
+  to {
+    rotate: 360deg;
+  }
+}
+#fx .cat-walk.ult .cat-art {
+  animation: cat-ult 0.5s ease-in-out infinite alternate;
+}
+#fx .cat-walk.ult.flip .cat-art {
+  animation: cat-ult-flip 0.5s ease-in-out infinite alternate;
+}
+@keyframes cat-ult {
+  from {
+    transform: scale(1);
+    filter: drop-shadow(0 0 10px #ffb347);
+  }
+  to {
+    transform: scale(1.12);
+    filter: drop-shadow(0 0 28px #ffb347) brightness(1.2);
+  }
+}
+@keyframes cat-ult-flip {
+  from {
+    transform: scaleX(-1) scale(1);
+    filter: drop-shadow(0 0 10px #ffb347);
+  }
+  to {
+    transform: scaleX(-1) scale(1.12);
+    filter: drop-shadow(0 0 28px #ffb347) brightness(1.2);
+  }
+}
+body.ult #fx .cat-walk .eyes {
+  filter: drop-shadow(0 0 3px #39ff14) drop-shadow(0 0 9px #39ff14);
+}
+body.ult #fx .cat-walk .eyes ellipse[fill="#8fd16b"] {
+  fill: #39ff14;
+}
+#fx .monster.zapped .art {
+  animation: zap-shake 0.06s linear infinite;
+  filter: brightness(2.2) drop-shadow(0 0 10px #ffb347);
+}
+@keyframes zap-shake {
+  0% {
+    translate: -3px 2px;
+  }
+  50% {
+    translate: 3px -2px;
+  }
+  100% {
+    translate: -2px -3px;
+  }
+}
+#fx .monster.ashed .art {
+  animation: mon-ash 0.8s ease-in forwards;
+}
+@keyframes mon-ash {
+  0% {
+    filter: brightness(2) grayscale(0);
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    filter: brightness(0.5) grayscale(1);
+    transform: scale(0.25) translateY(60px);
+    opacity: 0;
+  }
+}
+#fx .monster.ashed::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: calc(44px * var(--stage));
+  height: calc(18px * var(--stage));
+  border-radius: 50%;
+  background: radial-gradient(#b9b9b9, rgba(150, 150, 150, 0) 70%);
+  animation: ash-puff 0.8s ease-out forwards;
+}
+@keyframes ash-puff {
+  from {
+    transform: translateX(-50%) scale(0.2);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-50%) scale(1.6);
+    opacity: 0;
+  }
+}
+#spell-banner {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.7);
+  z-index: 85;
+  padding: 1.5vh 4vw;
+  white-space: nowrap;
+  font-size: 7vh;
+  font-variant: small-caps;
+  letter-spacing: 3px;
+  color: #fff3c4;
+  text-shadow:
+    0 0 12px var(--who, #f1d271),
+    0 0 40px var(--who, #f1d271),
+    0 4px 8px #000;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.35s,
+    transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+#spell-banner.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Phone cursors */
+/* Sparkle trails (sparkles.ts) sit just under the cursors so the arrows stay readable. */
+#sparkles {
+  position: fixed;
+  inset: 0;
+  z-index: 58;
+  pointer-events: none;
+}
+#cursors {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+.cursor.blessed {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 10px currentColor) drop-shadow(0 0 16px #ffe9b0);
+}
+.cursor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 10px currentColor);
+}
+.cursor svg {
+  display: block;
+  width: calc(52px * var(--stage));
+  height: calc(52px * var(--stage));
+  transform-origin: 3px 2px; /* the arrow tip */
+}
+.cursor .label {
+  position: absolute;
+  left: calc(26px * var(--stage));
+  top: calc(44px * var(--stage));
+  white-space: nowrap;
+  font-size: calc(13px * var(--stage));
+  font-variant: small-caps;
+  letter-spacing: 0.5px;
+  color: currentColor;
+  text-shadow:
+    0 0 3px #000,
+    0 0 6px #000,
+    1px 1px 0 #000;
+}
+.cursor.wiggle svg {
+  animation: wiggle 0.45s ease-in-out;
+}
+@keyframes wiggle {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  20% {
+    transform: rotate(-16deg) scale(1.15);
+  }
+  40% {
+    transform: rotate(14deg) scale(1.15);
+  }
+  60% {
+    transform: rotate(-10deg) scale(1.1);
+  }
+  80% {
+    transform: rotate(8deg) scale(1.05);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+/* 3. Animated moongate */
+.moongate-wrap {
+  width: 200px;
+  padding: 20px 0 10px;
+  text-align: center;
+}
+.moongate {
+  position: relative;
+  width: 120px;
+  height: 200px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    #eaf9ff 0%,
+    #8fdcff 22%,
+    var(--moon) 40%,
+    #1f6fe0 62%,
+    var(--moon-dk) 85%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 30px 10px rgba(79, 195, 255, 0.55),
+    inset 0 0 40px rgba(255, 255, 255, 0.5);
+  animation: breathe 2.2s ease-in-out infinite;
+}
+.moongate::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 3px solid rgba(160, 225, 255, 0.85);
+  animation: breathe 2.2s ease-in-out infinite reverse;
+}
+.moongate::after {
+  content: "";
+  position: absolute;
+  inset: -18px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0%, rgba(200, 240, 255, 0.95) 12%, transparent 28%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+  animation: spin 3s linear infinite;
+}
+.moongate-wrap .caption {
+  margin-top: 16px;
+  color: var(--gold-hi);
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+}
+.moongate-wrap .rune {
+  display: block;
+  font-size: 20px;
+}
+.moongate-wrap .caption-text {
+  display: block;
+  font-size: 12px;
+  font-style: italic;
+  opacity: 0.8;
+}
+/* Teleport spell: the gate burns brighter while it gathers everything near the caster. */
+.moongate-wrap.charging .moongate {
+  filter: brightness(1.6) saturate(1.4);
+  animation-duration: 0.6s;
+}
+.moongate-wrap.charging .moongate::after {
+  animation-duration: 0.8s;
+}
+/* Lightning: the thunderclap ring from the gate, and the overloaded gate for 10 s after. */
+#fx .thunder-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 4px solid rgba(232, 244, 255, 0.9);
+  box-shadow:
+    0 0 30px #8fdcff,
+    inset 0 0 30px rgba(143, 220, 255, 0.6);
+  pointer-events: none;
+  animation: thunder-ring 0.6s ease-out forwards;
+}
+@keyframes thunder-ring {
+  from {
+    transform: scale(0.1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+.moongate-wrap.overloaded .moongate {
+  filter: brightness(1.4) contrast(1.2);
+}
+.moongate-wrap.overloaded .moongate::before {
+  border-style: dashed;
+  border-color: #fff;
+  animation-duration: 0.35s;
+}
+.moongate-wrap.overloaded .moongate::after {
+  animation-duration: 0.5s;
+}
+body.interactive .moongate-wrap .handle:hover .rune {
+  text-shadow: 0 0 10px var(--gold-hi);
+}
+/* Level 3: sealed by the ankh (dim, slow), then torn open for the horde (violet, fast). */
+.moongate-wrap.sealed .moongate {
+  filter: saturate(0.5) brightness(0.8);
+  animation-duration: 4s;
+}
+.moongate-wrap.sealed .moongate::after {
+  animation-duration: 6s;
+}
+.moongate-wrap.horde .moongate {
+  filter: hue-rotate(-45deg) saturate(1.4) brightness(1.15);
+  animation-duration: 0.9s;
+}
+.moongate-wrap.horde .moongate::before {
+  border-color: rgba(220, 170, 255, 0.9);
+  animation-duration: 0.9s;
+}
+.moongate-wrap.horde .moongate::after {
+  animation-duration: 1s;
+}
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scaleX(0.92);
+  }
+  50% {
+    transform: scaleX(1.06);
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

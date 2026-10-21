@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="56" height="56">
+  <!-- Create Food: a roast on a plate. Hand-drawn placeholder. -->
+  <defs>
+    <radialGradient id="plate" cx="50%" cy="45%" r="55%"><stop offset="0" stop-color="#f7efd8"/><stop offset="1" stop-color="#cdbf9c"/></radialGradient>
+    <linearGradient id="meat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9793f"/><stop offset="1" stop-color="#7a3f1a"/></linearGradient>
+  </defs>
+  <ellipse cx="32" cy="40" rx="28" ry="13" fill="url(#plate)" stroke="#8a6a3a" stroke-width="1.5"/>
+  <ellipse cx="32" cy="40" rx="22" ry="9" fill="none" stroke="#8a6a3a" stroke-width="1" opacity=".5"/>
+  <path d="M18 36c0-10 8-16 16-16s14 6 14 14c0 6-6 8-14 8s-16-1-16-6z" fill="url(#meat)" stroke="#5e2c10" stroke-width="1.5"/>
+  <path d="M24 28c3-3 8-4 12-3" fill="none" stroke="#f0b27a" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+  <rect x="44" y="24" width="10" height="4" rx="2" fill="#f3ecdc" stroke="#9a8a6a" stroke-width="1" transform="rotate(-30 49 26)"/>
+  <circle cx="54" cy="21" r="2.5" fill="#f3ecdc" stroke="#9a8a6a" stroke-width="1"/>
+  <path d="M26 15c0 3 2 4 1 7M33 13c0 3 2 4 1 7M40 15c0 3 2 4 1 7" fill="none" stroke="#bbb" stroke-width="1.5" stroke-linecap="round" opacity=".7"/>
+</svg>

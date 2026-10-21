@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#2a2b2e" />
+    <title>Webinar pointer</title>
+    <style>
+      /* Phone pad: a charcoal reticle around a big stone disc that carries YOUR arrow in
+         your cursor's colour (Bobby 2026-10-02; Ginger moved to the corner as the mascot).
+         The pad is an analog stick (Bobby 2026-10-04, "like the N64 stick for Mario"): push
+         from wherever your thumb landed = the cursor on the Seer's (presenter's) screen moves
+         that way for as long as you push, further = faster; lift = it stops. The disc and the
+         arrow stay put (Bobby: a static thing); only the rim glows with the push. A still
+         thumb = grab what is under it (reagent or a movable widget), lift = drop. Tap =
+         wiggle. Double tap on the bag = look inside. Whatever you carry shows on the disc; a
+         teleport bursts on the disc, and Ginger blinks twice at it from his corner. */
+      html, body {
+        margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none;
+        background: radial-gradient(circle at 50% 45%, #34363a 0%, #2a2b2e 55%, #202124 100%);
+        color: #cfd3d8; font: 15px system-ui, -apple-system, sans-serif;
+        touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+      }
+      /* The top column: who you are, the map, and a pill for messages (empty and hidden when idle;
+         Bobby 2026-10-03: no "Seeker · room · connected" label). Pointer events pass through to the
+         pad, except on the map. */
+      #top { position: absolute; top: max(12px, env(safe-area-inset-top)); left: 0; right: 0;
+        display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+      #status { max-width: 86vw; padding: 4px 14px; border-radius: 999px; text-align: center;
+        background: rgba(0,0,0,.55); border: 1px solid rgba(201,162,39,.35);
+        font-size: 14px; letter-spacing: .5px; opacity: .92; pointer-events: none; }
+      #status:empty { display: none; }
+      #status b { color: #f1d271; letter-spacing: 3px; }
+      /* who you are on the Seer's screen */
+      #me { text-align: center; font-size: 15px; letter-spacing: .5px; pointer-events: none; display: none; }
+      #me .arrow { display: inline-block; width: 16px; height: 16px; vertical-align: -2px; margin-right: 4px; }
+      #me .name { font-variant: small-caps; letter-spacing: 1px; color: var(--me, #f1d271); }
+      body.named #me { display: block; }
+      body.named #reticle .tick { stroke: var(--me); }
+      body.named #disc .rim { stroke: var(--me); }
+      #pad { position: fixed; inset: 0; display: grid; place-items: center; }
+      #reticle { width: min(86vw, 86vh); height: min(86vw, 86vh); }
+      #reticle .ring { fill: none; stroke: #8a8f94; stroke-width: 1.2; }
+      #reticle .ring.outer { stroke-width: 2; stroke-dasharray: 10 6; }
+      #reticle .tick { stroke: #a9aeb3; stroke-width: 2; }
+      #reticle .hair { stroke: #6f7479; stroke-width: 1; }
+      #reticle .hair.faint { stroke: #4f5459; }
+      .hold #disc .rim { stroke: #f1d271 !important; stroke-width: 3; opacity: 1; filter: drop-shadow(0 0 6px #f1d271); }
+      body.dead #pad { opacity: .35; }
+      /* a ghost (caught by a monster): pale and dim until the healer or the clock restores you (the map stays readable) */
+      body.ghost #reticle, body.ghost #disc-box { opacity: .55; filter: grayscale(.7) brightness(1.3); }
+      body.ghost #reticle .ring, body.ghost #reticle .tick { stroke: #bfe9ff; }
+      body.ghost #me-arrow path { fill: #bfe9ff; }
+      body.ghost #cat { filter: grayscale(1) opacity(.6); }
+      body.ghost .spell { opacity: .3; pointer-events: none; }
+      body.ghost #status { color: #bfe9ff; }
+      #hint { position: fixed; bottom: max(16px, env(safe-area-inset-bottom)); left: 12px; right: 12px;
+        text-align: center; font-size: 12.5px; line-height: 1.4; opacity: .55; pointer-events: none; }
+      /* The ending: the moongate opened for this phone and Mystica waits. A real button over the pad
+         (the status pill ignores touches, so a link in it could never be tapped), which stays until
+         tapped: the student leaves on purpose (Bobby 2026-10-17), nothing yanks the page away. */
+      #portal { position: fixed; inset: 0; z-index: 100; display: none; flex-direction: column; align-items: center;
+        justify-content: center; gap: 18px; padding: 24px; text-align: center; background: rgba(12, 9, 4, .88); }
+      body.portal #portal { display: flex; }
+      #portal .head { font-size: 21px; letter-spacing: 1.5px; color: #f1d271; }
+      #portal .sub { font-size: 14px; line-height: 1.45; opacity: .8; max-width: 78vw; }
+      #portal a { display: block; padding: 18px 38px; border-radius: 18px; border: 2px solid #f1d271; color: #f1d271;
+        background: linear-gradient(#6a4710, #2e1e05); font-size: 23px; font-weight: 600; letter-spacing: 1px;
+        text-decoration: none; animation: portal-pulse 1.6s ease-in-out infinite; }
+      @keyframes portal-pulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 18px rgba(241, 210, 113, .35); }
+        50% { transform: scale(1.05); box-shadow: 0 0 36px rgba(241, 210, 113, .75); }
+      }
+
+      /* The Seer's glass: a small map of the stage (the widgets as silhouettes, your dot in your
+         colour). The dot is dead-reckoned HERE from your own stick (the phone sums the very
+         distances it sends), so it never lags behind the video stream; the overlay only corrects
+         it when the cursor jumps (teleport, nudge, ghost, grab, drop). Tap the map to jump there. */
+      #map { position: relative; width: min(74vw, 340px); aspect-ratio: var(--ar, 16 / 10); display: none; overflow: hidden;
+        pointer-events: auto;
+        border: 2px solid #c9a227; border-radius: 6px; background: linear-gradient(160deg, #1d1b21, #111114);
+        box-shadow: 0 4px 14px rgba(0,0,0,.6), inset 0 0 18px rgba(201,162,39,.14); }
+      body.mapped #map { display: block; }
+      body.mapped #reticle { margin-top: 12vh; }
+      body.mapped #disc-box { top: calc(50% + 6vh); }
+      #map svg { display: block; width: 100%; height: 100%; }
+      #map .silhouette { fill: rgba(241,210,113,.16); stroke: rgba(241,210,113,.5); stroke-width: 1; vector-effect: non-scaling-stroke; }
+      #map .silhouette.moongate { fill: rgba(79,195,255,.2); stroke: rgba(79,195,255,.7); }
+      #map .silhouette.backpack, #map .silhouette.gump { fill: rgba(170,110,60,.32); stroke: rgba(214,150,86,.7); }
+      #map .silhouette.signpost { fill: rgba(100,160,90,.22); stroke: rgba(120,200,110,.6); }
+      /* the ankh is drawn as itself (gold strokes), not a box */
+      #map .glyph-ankh { fill: none; stroke: #f1d271; stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linecap: round; opacity: .9; }
+      #map .me { fill: var(--me, #f1d271); stroke: #fff; stroke-width: 1.5; vector-effect: non-scaling-stroke;
+        filter: drop-shadow(0 0 4px var(--me, #f1d271)); }
+      body.ghost #map .me { fill: #bfe9ff; filter: drop-shadow(0 0 4px #bfe9ff); }
+      #map .ping { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%;
+        border: 2px solid var(--me, #f1d271); pointer-events: none; animation: ping .6s ease-out forwards; }
+      @keyframes ping { 0% { transform: scale(.5); opacity: 1; } 100% { transform: scale(5); opacity: 0; } }
+
+      /* The disc: a grained stone with an engraved compass ring and your arrow on it. It leans a
+         little with the thumb while it is dragged (`--fx/--fy`: 30% of the drag, up to 80 px, from
+         its resting place; the original look, which Bobby asked back on 2026-10-04 after a version
+         that came under the thumb and followed it was "very strange / too complicated"). The rim
+         takes your colour once you are named; a `.push` ring in your colour brightens with the push. */
+      #disc-box { position: absolute; left: 50%; top: 50%; width: min(56vw, 56vh); height: min(56vw, 56vh);
+        --fx: 0px; --fy: 0px; --push: 0; transform: translate(calc(-50% + var(--fx)), calc(-50% + var(--fy))); transition: transform .12s ease-out; }
+      #disc { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 8px 12px rgba(0,0,0,.65)); }
+      #disc .rim { fill: none; stroke: #8a8f94; stroke-width: 1.6; opacity: .9; transition: stroke .3s; }
+      #disc .push { fill: none; stroke: var(--me, #f1d271); stroke-width: 4; opacity: var(--push); transition: opacity .1s;
+        filter: drop-shadow(0 0 6px var(--me, #f1d271)); }
+      #disc .engrave { fill: none; stroke: #15161a; stroke-width: 1.4; opacity: .8; }
+      #disc .engrave-hi { fill: none; stroke: #7d8288; stroke-width: 1; opacity: .5; }
+      #disc .stud { fill: #1b1c20; stroke: #6f747a; stroke-width: .6; }
+      /* Optically centred (Bobby 2026-10-03): the glyph's centre of mass is at 41% / 46% of its box
+         (the tip and the long edge are up-left), so the box sits 9% right and 4% down of the disc centre.
+         It stays put and points as it does on the Seer's screen (Bobby 2026-10-04: no sliding, no
+         turning with the push; "a bit smaller": 38% of the disc, was 46%). */
+      #me-arrow { position: absolute; left: 50%; top: 50%; width: 38%; height: 38%; transform: translate(-41%, -46%);
+        transition: transform .12s ease-out; filter: drop-shadow(0 3px 4px rgba(0,0,0,.75)); }
+      #me-arrow path { fill: var(--me, #f1d271); }
+      .pop #me-arrow { transform: translate(-41%, -46%) scale(1.18); }
+      .hold #me-arrow { filter: drop-shadow(0 0 10px #f1d271) drop-shadow(0 3px 4px rgba(0,0,0,.75)); }
+      /* Ginger, the mascot, in the bottom-left corner; still blinks at teleports and double taps, and idly. */
+      #mascot { position: fixed; left: 10px; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 84px); width: 18vmin; height: 18vmin; pointer-events: none; }
+      #cat { width: 100%; height: 100%; font-size: 14vmin; line-height: 1; text-align: center; }
+      #cat svg { display: block; width: 100%; height: 100%; }
+      #cat .eyes { transform-box: fill-box; transform-origin: center; }
+      .blink #cat .eyes { animation: blink .9s ease-in-out; }
+      @keyframes blink {
+        0%, 100% { transform: scaleY(1); }
+        12%, 22% { transform: scaleY(.06); }
+        32% { transform: scaleY(1); }
+        52%, 62% { transform: scaleY(.06); }
+        72% { transform: scaleY(1); }
+      }
+      /* what you carry, on the disc below the arrow */
+      #carry { position: absolute; left: 50%; bottom: 7%; width: 30%; transform: translateX(-50%); display: none;
+        filter: drop-shadow(0 3px 5px rgba(0,0,0,.7)); }
+      .carrying #carry { display: block; }
+      #carry-label { position: absolute; left: 50%; top: 104%; transform: translateX(-50%); white-space: nowrap;
+        font-size: 13px; color: #f1d271; display: none; }
+      .carrying #carry-label { display: block; }
+
+      /* teleport burst on the disc (same star as the overlay) */
+      .tstar { position: absolute; left: 50%; top: 50%; width: 140%; height: 140%; margin: -70% 0 0 -70%;
+        pointer-events: none; --rot0: 0deg; }
+      .tstar::before { content: ""; position: absolute; inset: -40%; border-radius: 50%;
+        background: radial-gradient(circle, rgba(255,255,255,.35) 0%, rgba(205,228,255,.3) 22%, rgba(120,170,255,.16) 45%, rgba(120,170,255,0) 65%);
+        mix-blend-mode: plus-lighter; animation: tbloom .52s ease-out forwards; }
+      .tstar svg { display: block; width: 100%; height: 100%; transform-origin: center;
+        filter: drop-shadow(0 0 3px rgba(255,255,255,.9)) drop-shadow(0 0 14px rgba(190,220,255,.9)); animation: tstar .52s forwards; }
+      @keyframes tstar {
+        0% { transform: scale(0) rotate(var(--rot0)); animation-timing-function: cubic-bezier(.1,.85,.3,1); }
+        50% { transform: scale(1) rotate(calc(var(--rot0) + 40deg)); filter: drop-shadow(0 0 4px rgba(255,255,255,.95)) drop-shadow(0 0 26px rgba(190,220,255,1)) brightness(1.15); animation-timing-function: cubic-bezier(.7,0,.9,.3); }
+        100% { transform: scale(0) rotate(calc(var(--rot0) + 80deg)); }
+      }
+      @keyframes tbloom { 0% { transform: scale(.2); opacity: 0; } 45% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.3); opacity: 0; } }
+
+      /* Spellbook drawer: appears once the bag is full; the pad above keeps working. */
+      #spellbook { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: none;
+        transform: translateY(calc(100% - 44px)); transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+      body.spells #spellbook { display: block; }
+      body.book-open #spellbook { transform: translateY(0); }
+      body.spells #hint { display: none; } /* the drawer's tab sits over it anyway */
+      #spell-tab { height: 44px; margin: 0 12px; display: flex; align-items: center; justify-content: center; gap: 8px;
+        border-radius: 12px 12px 0 0; background: #3a2410; border: 2px solid #c9a227; border-bottom: none;
+        color: #f1d271; font-variant: small-caps; letter-spacing: 2px; font-size: 16px; }
+      #spell-tab .chev { transition: transform .3s; }
+      body.book-open #spell-tab .chev { transform: rotate(180deg); }
+      #spell-panel { background: linear-gradient(160deg, #7a5230, #55371c); border-top: 2px solid #c9a227;
+        padding: 10px 12px max(14px, env(safe-area-inset-bottom)); color: #f1d271; }
+      #spell-stock { display: flex; gap: 6px; justify-content: center; margin-bottom: 8px; min-height: 30px; }
+      #spell-stock img { width: 28px; height: 28px; opacity: .25; filter: grayscale(1); }
+      #spell-stock img.have { opacity: 1; filter: none; }
+      #spell-stock .st { position: relative; display: inline-block; line-height: 0; }
+      #spell-stock .st i { position: absolute; right: -6px; top: -6px; font-style: normal; font-size: 10px; font-weight: bold;
+        background: #f1d271; color: #1a1208; border-radius: 8px; padding: 1px 4px; line-height: 1.2; }
+      #spell-stock .st i.t { background: #5a5a5a; color: #eee; right: -10px; } /* gone: back in m:ss */
+      #spell-stock .none { font-size: 12px; opacity: .7; font-style: italic; }
+      #spell-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .spell { position: relative; padding: 8px 10px; border-radius: 8px; background: rgba(20,14,8,.55); border: 1px solid rgba(201,162,39,.5);
+        color: #fff3c4; text-align: left; font: inherit; opacity: .45; }
+      .spell.can { opacity: 1; border-color: #f1d271; box-shadow: 0 0 10px rgba(241,210,113,.35); }
+      .spell.cooling { opacity: .6; }
+      .spell b { display: block; font-variant: small-caps; letter-spacing: 1px; font-size: 15px; }
+      .spell .recipe { display: flex; gap: 4px; margin: 4px 0; }
+      .spell .recipe img { width: 22px; height: 22px; }
+      .spell .recipe img.missing { opacity: .3; filter: grayscale(1); }
+      .spell small { display: block; font-size: 11px; opacity: .75; }
+      .spell .cd { position: absolute; right: 8px; top: 6px; font-size: 12px; color: #f1d271; }
+      /* Spells per page come from the overlay (Bobby: the drawer must not grow); an empty slot is a faint "?" card. */
+      .spell.unwritten { opacity: .4; border-style: dashed; text-align: center; }
+      .spell.unwritten .recipe { height: 22px; }
+      #spell-pager { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 8px; font-size: 13px; }
+      #spell-pager:empty { display: none; }
+      #spell-pager button { width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 1px solid #c9a227;
+        background: rgba(20,14,8,.55); color: #f1d271; font: inherit; font-size: 18px; line-height: 1; }
+    </style>
+  </head>
+  <body>
+    <div id="pad">
+      <div id="top">
+        <div id="me">you are <svg class="arrow" viewBox="0 0 24 24"><path d="M3 2 L21 12 L12.5 13.6 L8 22 Z" fill="var(--me)" stroke="#1a1208" stroke-width="1.6" stroke-linejoin="round"/></svg><span class="name"></span></div>
+        <!-- The Seer's glass: shown once the overlay has sent the layout. A tap jumps the cursor there. -->
+        <div id="map" aria-label="map of the Seer's screen: tap to jump there">
+          <svg id="map-svg" viewBox="0 0 1600 1000" preserveAspectRatio="none" aria-hidden="true">
+            <g id="map-widgets"></g>
+            <circle id="map-me" class="me" cx="800" cy="500" r="24" />
+          </svg>
+        </div>
+        <div id="status">connecting…</div>
+      </div>
+      <svg id="reticle" viewBox="0 0 200 200" aria-hidden="true">
+        <!-- reticle rings + an eight-point compass rose (no helipad) -->
+        <circle class="ring outer" cx="100" cy="100" r="92" />
+        <circle class="ring" cx="100" cy="100" r="70" />
+        <path class="hair" d="M100 4 V40 M100 160 V196 M4 100 H40 M160 100 H196" />
+        <path class="hair faint" d="M32 32 L58 58 M168 32 L142 58 M32 168 L58 142 M168 168 L142 142" />
+        <path class="tick" d="M100 4 V14 M100 186 V196 M4 100 H14 M186 100 H196" />
+      </svg>
+      <div id="disc-box">
+        <svg id="disc" viewBox="0 0 200 200" aria-hidden="true">
+          <defs>
+            <radialGradient id="disc-g" cx="40%" cy="36%" r="72%">
+              <stop offset="0" stop-color="#5d6066" /><stop offset=".55" stop-color="#3d4046" /><stop offset="1" stop-color="#23252a" />
+            </radialGradient>
+            <!-- the grain: fractal noise masked to the disc -->
+            <filter id="grain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+              <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="3" seed="11" result="n" />
+              <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  .7 0 0 0 -.1" result="a" />
+              <feComposite in="a" in2="SourceGraphic" operator="in" />
+            </filter>
+          </defs>
+          <circle cx="100" cy="100" r="97" fill="#17181b" />
+          <circle cx="100" cy="100" r="93" fill="url(#disc-g)" />
+          <circle cx="100" cy="100" r="93" fill="#000" filter="url(#grain)" opacity=".5" />
+          <!-- the engraved compass ring: a groove, eight studs, twenty-four notches -->
+          <circle class="engrave" cx="100" cy="100" r="80" />
+          <circle class="engrave-hi" cx="100" cy="100" r="78.5" />
+          <g class="notches" stroke="#15161a" stroke-width="1.4" opacity=".75">
+            <path d="M100 14 V22 M100 178 V186 M14 100 H22 M178 100 H186" stroke-width="2.2" />
+            <path d="M139.1 19.6 l-3 6.9 M60.9 19.6 l3 6.9 M180.4 60.9 l-6.9 3 M180.4 139.1 l-6.9 -3 M139.1 180.4 l-3 -6.9 M60.9 180.4 l3 -6.9 M19.6 60.9 l6.9 3 M19.6 139.1 l6.9 -3" />
+            <path d="M121.6 17.7 l-1.6 7.5 M78.4 17.7 l1.6 7.5 M157.7 32.4 l-5.3 5.5 M42.3 32.4 l5.3 5.5 M182.3 78.4 l-7.5 1.6 M17.7 78.4 l7.5 1.6 M182.3 121.6 l-7.5 -1.6 M17.7 121.6 l7.5 -1.6 M157.7 167.6 l-5.3 -5.5 M42.3 167.6 l5.3 -5.5 M121.6 182.3 l-1.6 -7.5 M78.4 182.3 l1.6 -7.5" />
+          </g>
+          <g class="studs">
+            <circle class="stud" cx="100" cy="30" r="2.6" /><circle class="stud" cx="100" cy="170" r="2.6" />
+            <circle class="stud" cx="30" cy="100" r="2.6" /><circle class="stud" cx="170" cy="100" r="2.6" />
+            <circle class="stud" cx="149.5" cy="50.5" r="2" /><circle class="stud" cx="50.5" cy="50.5" r="2" />
+            <circle class="stud" cx="149.5" cy="149.5" r="2" /><circle class="stud" cx="50.5" cy="149.5" r="2" />
+          </g>
+          <circle class="rim" cx="100" cy="100" r="93" />
+          <circle class="push" cx="100" cy="100" r="93" />
+        </svg>
+        <!-- your arrow, as it looks on the Seer's screen, in your colour -->
+        <svg id="me-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2 L21 12 L12.5 13.6 L8 22 Z" stroke="#1a1208" stroke-width="1.6" stroke-linejoin="round" /></svg>
+        <img id="carry" alt="" draggable="false" />
+        <div id="carry-label"></div>
+      </div>
+    </div>
+    <!-- Ginger, the mascot, in his corner -->
+    <div id="mascot"><div id="cat">🐈</div></div>
+    <!-- The ending: shown when the overlay sends `travel` (this cursor entered the portal). -->
+    <div id="portal">
+      <div class="head">✦ the moongate opens ✦</div>
+      <a id="portal-link" href="#" rel="noopener">Enter Mystica</a>
+      <div class="sub">hold the phone sideways · type a name and you are in</div>
+    </div>
+    <div id="hint">push the arrow = move, further = faster · tap the map = jump there · hold still = grab a reagent or a widget · lift = drop<br />tap = wiggle · tap the codex = turn the page · double-tap the bag or the codex = open · tap the moongate = ?</div>
+
+    <!-- Spellbook: shown once the bag is full. Tap a lit spell to cast it. -->
+    <div id="spellbook">
+      <div id="spell-tab"><span>✦ Spellbook</span><span class="chev">▲</span></div>
+      <div id="spell-panel">
+        <div id="spell-stock"></div>
+        <div id="spell-cards"></div>
+        <div id="spell-pager"></div>
+      </div>
+    </div>
+    <script>
+      const room = (location.pathname.split("/r/")[1] || new URLSearchParams(location.search).get("room") || "")
+        .toUpperCase().replace(/[^A-Z0-9]/g, "");
+      const status = document.getElementById("status");
+      const body = document.body;
+      const discBox = document.getElementById("disc-box");
+      const cat = document.getElementById("cat");
+      const carry = document.getElementById("carry");
+      const carryLabel = document.getElementById("carry-label");
+      const portalLink = document.getElementById("portal-link");
+      let ws, dead = false, myId = null, flashTimer = 0, starSeq = 0, role = "";
+
+      // Ginger: the overlay's own art, served by the relay. Falls back to the emoji.
+      fetch("/assets/cat-ginger.svg").then((r) => (r.ok ? r.text() : Promise.reject())).then((svg) => { cat.innerHTML = svg; }).catch(() => {});
+
+      let ghostUntil = 0, ghostBy = "", ghostTimer = 0;
+      const ghostLine = () => `☠ a ${ghostBy} got you · a ghost for <b>${Math.max(0, Math.ceil((ghostUntil - Date.now()) / 1000))} s</b> · drift to the healer`;
+      const idle = () => (body.classList.contains("ghost") ? ghostLine() : ""); // nothing to say when all is well (the pill hides)
+      function tickGhost() {
+        clearTimeout(ghostTimer);
+        if (!body.classList.contains("ghost")) return;
+        setStatus(ghostLine());
+        ghostTimer = setTimeout(tickGhost, 1000);
+      }
+      function setStatus(text) { status.innerHTML = text; }
+      // Show a message for a moment, then go back to the idle line (or on to `next`, another { text, ms }).
+      function flash(text, ms = 2500, next = null) {
+        clearTimeout(flashTimer);
+        setStatus(text);
+        flashTimer = setTimeout(() => { if (dead) return; if (next) flash(next.text, next.ms); else setStatus(idle()); }, ms);
+      }
+      function setCarrying(m) {
+        body.classList.add("carrying");
+        // A rest-hold (the stick stopped mid-stroke) shows and buzzes only now, when the grab has taken.
+        if (active && !body.classList.contains("hold")) { body.classList.add("hold"); if (navigator.vibrate) navigator.vibrate(35); }
+        if (m.kind === "reagent" || m.kind === "trinket") { carry.src = `/assets/${m.item}.svg`; carry.style.display = ""; } else { carry.style.display = "none"; }
+        carryLabel.textContent = m.name;
+      }
+      function stopCarrying() { body.classList.remove("carrying"); carry.removeAttribute("src"); }
+      // Same four-pointed star as the overlay: folded facets and a shining core.
+      function starSvg() {
+        const n = ++starSeq;
+        const stops = '<stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d9e1ec"/>';
+        return `<svg viewBox="0 0 100 100" aria-hidden="true"><defs>
+          <linearGradient id="gl${n}" gradientUnits="userSpaceOnUse" x1="50" y1="0" x2="38" y2="0">${stops}</linearGradient>
+          <linearGradient id="gr${n}" gradientUnits="userSpaceOnUse" x1="50" y1="0" x2="62" y2="0">${stops}</linearGradient>
+          <linearGradient id="gu${n}" gradientUnits="userSpaceOnUse" x1="0" y1="50" x2="0" y2="38">${stops}</linearGradient>
+          <linearGradient id="gd${n}" gradientUnits="userSpaceOnUse" x1="0" y1="50" x2="0" y2="62">${stops}</linearGradient>
+          <radialGradient id="core${n}" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff"/><stop offset="0.28" stop-color="#fff" stop-opacity="0.95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
+          <path d="M50 2 L38 38 L50 50 Z" fill="url(#gl${n})"/><path d="M50 2 L62 38 L50 50 Z" fill="url(#gr${n})"/>
+          <path d="M98 50 L62 38 L50 50 Z" fill="url(#gu${n})"/><path d="M98 50 L62 62 L50 50 Z" fill="url(#gd${n})"/>
+          <path d="M50 98 L62 62 L50 50 Z" fill="url(#gr${n})"/><path d="M50 98 L38 62 L50 50 Z" fill="url(#gl${n})"/>
+          <path d="M2 50 L38 62 L50 50 Z" fill="url(#gd${n})"/><path d="M2 50 L38 38 L50 50 Z" fill="url(#gu${n})"/>
+          <path d="M50 2 L62 38 L98 50 L62 62 L50 98 L38 62 L2 50 L38 38 Z" fill="url(#core${n})"/></svg>`;
+      }
+      // A meow, synthesized (no audio files): two detuned voices with a rising-then-falling
+      // pitch through a sweeping band-pass. The AudioContext is unlocked by the first touch
+      // on the pad, so it can play later when the overlay says the cat was tapped.
+      let audio = null;
+      function audioCtx() {
+        if (!audio) { try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; } }
+        if (audio.state === "suspended") audio.resume().catch(() => {});
+        return audio;
+      }
+      function playMeow() {
+        const ac = audioCtx();
+        if (!ac || ac.state !== "running") return;
+        const t = ac.currentTime;
+        const voice = (type, f0, f1, f2, vol) => {
+          const o = ac.createOscillator(); o.type = type;
+          o.frequency.setValueAtTime(f0, t);
+          o.frequency.linearRampToValueAtTime(f1, t + 0.18);
+          o.frequency.exponentialRampToValueAtTime(f2, t + 0.62);
+          const g = ac.createGain(); g.gain.value = vol;
+          o.connect(g); return { o, g };
+        };
+        const a = voice("sawtooth", 520, 760, 380, 1);
+        const b = voice("triangle", 1040, 1520, 760, 0.35);
+        const f = ac.createBiquadFilter(); f.type = "bandpass"; f.Q.value = 2.5;
+        f.frequency.setValueAtTime(900, t); f.frequency.linearRampToValueAtTime(1600, t + 0.2); f.frequency.exponentialRampToValueAtTime(700, t + 0.62);
+        const env = ac.createGain();
+        env.gain.setValueAtTime(0.0001, t); env.gain.exponentialRampToValueAtTime(0.35, t + 0.06);
+        env.gain.setValueAtTime(0.35, t + 0.3); env.gain.exponentialRampToValueAtTime(0.0001, t + 0.68);
+        a.g.connect(f); b.g.connect(f); f.connect(env); env.connect(ac.destination);
+        a.o.start(t); b.o.start(t); a.o.stop(t + 0.7); b.o.stop(t + 0.7);
+      }
+      // Ginger blinks twice (also used on a double tap), and idly every few seconds.
+      function blink() {
+        body.classList.remove("blink"); void cat.offsetWidth; body.classList.add("blink");
+        setTimeout(() => body.classList.remove("blink"), 1000);
+      }
+      (function idleBlink() { setTimeout(() => { if (!document.hidden) blink(); idleBlink(); }, 4000 + Math.random() * 7000); })();
+      function teleported() {
+        const el = document.createElement("div");
+        el.className = "tstar";
+        el.style.setProperty("--rot0", `${Math.floor(Math.random() * 360)}deg`);
+        el.innerHTML = starSvg();
+        discBox.appendChild(el);
+        setTimeout(() => el.remove(), 600);
+        setTimeout(blink, 520); // Ginger, from his corner: "what was that?!" once the burst is over
+        if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+      }
+
+      function connect() {
+        if (!room) { setStatus("no room code in the URL"); return; }
+        const proto = location.protocol === "https:" ? "wss" : "ws";
+        ws = new WebSocket(`${proto}://${location.host}/ws?room=${room}&role=phone`);
+        ws.onopen = () => setStatus(idle());
+        ws.onmessage = (e) => {
+          let m; try { m = JSON.parse(e.data); } catch { return; }
+          if (m.type === "hello") { myId = m.id; return; }
+          if (m.from !== "desktop") return;
+          const mine = m.to === myId;
+          if (m.type === "you" && mine) {
+            // the overlay named us and told us our cursor colour
+            document.documentElement.style.setProperty("--me", m.color);
+            document.querySelector("#me .name").textContent = m.name;
+            role = m.role || ""; // "Seeker": the audience, as the overlay calls them
+            body.classList.add("named"); // the "you are ▲ Name" line says it; no flash
+            setStatus(idle());
+          }
+          else if (m.type === "layout" && (mine || !m.to)) onLayout(m);
+          else if (m.type === "pos" && mine) { map.x = m.x; map.y = m.y; drawMe(); }
+          else if (m.type === "goto" && mine && !m.ok) flash(m.reason === "carrying" ? "thou canst not jump while carrying · lift first" : m.reason === "ghost" ? "a ghost can only drift" : "the glass is clouded");
+          else if (m.type === "grab" && mine) { setCarrying(m); flash(`holding <b>${m.name}</b> · push to carry, lift to drop`, 6000); }
+          else if (m.type === "drop" && mine) {
+            stopCarrying();
+            const you = typeof m.score === "number" ? ` · you: ${m.score}` : "";
+            flash(m.snatched ? `the ${m.by} bird snatched <b>${m.name}</b> out of your hands!` : m.placed ? "✦ the ankh is set upon the moongate ✦" : m.spent ? `<b>${m.name}</b> was spent by a spell` : m.kept ? `<b>${m.name}</b> stays in the pack · only the Seer takes things out` : m.slipped ? `your grip slipped · <b>${m.name}</b> fell` : m.collected ? `<b>${m.name}</b> into the pack!${you}` : `dropped <b>${m.name}</b>`);
+          }
+          else if (m.type === "teleport" && mine && m.state === "gathered") { teleported(); flash("✦ pulled onto the moongate · get off it! ✦", m.ms || 1500); }
+          else if (m.type === "teleport" && mine && m.state === "bagged") { pop(); flash(`✦ <b>${(m.names || []).join(", ")}</b> flew into the pack ✦`, 4000); }
+          else if (m.type === "teleport" && mine) { teleported(); flash("✦ the moongate took you somewhere else ✦", 3500); }
+          else if (m.type === "travel" && mine && typeof m.url === "string" && /^https:\/\/[^\s"'<>]+$/.test(m.url)) {
+            // the ending: the moongate opened for this phone. Only https. A button, not a jump
+            // (Bobby 2026-10-17): the student taps Enter Mystica and leaves on purpose; the socket
+            // closes with the page and the overlay's cursor goes with it.
+            teleported(); pop();
+            portalLink.href = m.url;
+            body.classList.add("portal");
+            flash("✦ the moongate opens · <b>Mystica</b> waits ✦", 6000);
+            if (navigator.vibrate) navigator.vibrate([60, 40, 60, 40, 140]);
+          }
+          else if (m.type === "gump" && mine) flash(m.state === "opened" ? "you opened the backpack" : "the backpack is already open");
+          else if (m.type === "codex" && mine) flash(m.state === "page" ? `codex · page ${m.page} of ${m.of}${m.tip ? " · " + m.tip : ""}` : { opened: "you unrolled the codex", closed: "you rolled up the codex" }[m.state] || "the codex is not ready yet · wait a moment", m.tip ? 6000 : 2500);
+          else if (m.type === "ankh" && mine && m.state === "stirs") flash(`the ankh stirs · ${m.have} of ${m.need} Seekers · tap and wiggle on it`, 3500);
+          else if (m.type === "ankh" && mine && m.state === "blessed") { teleported(); flash("✦ the ankh blesses you · your cursor trails sparkles for a minute ✦", 6000); }
+          else if (m.type === "ankh" && m.state === "awakened" && !mine) flash(m.names?.length ? `✦ the ankh blessed ${m.names.join(", ")} ✦` : "✦ the ankh awakens ✦", 5000);
+          else if (m.type === "meow" && mine) { playMeow(); blink(); flash("meow!", 1500); }
+          else if (m.type === "shoved" && mine) { pop(); flash("✦ the lightning threw you back ✦", 2500); if (navigator.vibrate) navigator.vibrate(80); }
+          else if (m.type === "bird" && m.state === "steal") flash(m.victim ? (m.victim === document.querySelector("#me .name").textContent ? `the ${m.color} bird snatched <b>${m.name}</b> out of your hands!` : `the ${m.color} bird snatched <b>${m.name}</b> from ${m.victim}`) : `the ${m.color} bird carries <b>${m.name}</b> off to the signpost`, 4000);
+          else if (m.type === "bird" && m.state === "chased") flash(`Ginger chases the ${m.color} bird off!`, 3000);
+          else if (m.type === "cat" && m.state === "scare") flash(`Ginger startles the ${m.color} bird off the post`, 3000);
+          else if (m.type === "cat" && m.state === "lunge") flash("hss! Ginger lunges", 1500);
+          else if (m.type === "bird" && mine) flash(`you startled the ${m.color} bird`, 2000);
+          else if (m.type === "cat" && m.state === "perch") flash(`Ginger charges <b>${m.name}</b> and sits on it, tail flicking`, 2500);
+          else if (m.type === "cat" && m.state === "gate") flash("✦ the moongate took Ginger · he looks confused ✦", 3000);
+          else if (m.type === "cat" && m.state === "ankh") flash("✦ Ginger purrs on the ankh · it conjures him a dish ✦", 3500);
+          else if (m.type === "cat" && m.state === "yarn") flash("Ginger goes for the ball of yarn", 2500);
+          else if (m.type === "cat" && m.state === "swat" && mine) { pop(); flash("Ginger pounces at your yarn · keep it moving!", 2000); }
+          else if (m.type === "cat" && m.state === "bat") flash(m.kick ? `Ginger bolts off and knocks <b>${m.name}</b> away!` : m.again ? `Ginger bats <b>${m.name}</b> again!` : `Ginger bats <b>${m.name}</b> across the floor`, 3000);
+          else if (m.type === "respawn" && m.names?.length) flash(`✦ <b>${m.names.join(", ")}</b> is back on the overlay ✦`, 4000);
+          else if (m.type === "glow" && mine && m.count) flash(`✦ moonglow <b>${m.count}</b> ✦`, 1500);
+          else if (m.type === "glow" && m.state === "end") {
+            const me = document.querySelector("#me .name").textContent;
+            const won = (m.winners || []).includes(me);
+            if (won) { teleported(); flash(`✦ <b>you</b> won the moonglow hunt with ${m.top} · sparkles! ✦`, 6000); }
+            else flash(m.winners?.length ? `✦ <b>${m.winners.join(" & ")}</b> won the moonglow hunt (${m.top}) ✦` : "the moonglow faded, uncaught", 5000);
+          }
+          else if (m.type === "spells" && (mine || !m.to)) { spells = m; spells.at = Date.now(); renderSpells(); }
+          else if (m.type === "cast" && mine) {
+            if (m.ok) { coolUntil = Date.now() + (m.cooldown ?? spells?.cooldown ?? 10000); flash(m.nocked ? "✦ arrow nocked · <b>push to shoot</b> ✦" : `you cast <b>${spellName(m.spell)}</b>!`, m.nocked ? 8000 : 3000); }
+            else flash({ missing: "not enough reagents in the bag", cooldown: "wait a moment", busy: "someone else is casting", closed: "the spellbook is closed", ghost: "a ghost cannot cast · find the healer" }[m.reason] || "the spell fizzled");
+            renderSpells();
+          }
+          else if (m.type === "casted" && m.by) flash(`<b>${m.by}</b> casts <b>${m.name}</b>`, 3000);
+          else if (m.type === "aimed" && mine && m.state === "charging") { if (navigator.vibrate) navigator.vibrate([30, 30, 30, 30, 60]); flash("✦ the bow strains · <b>the last arrow charges</b> ✦", m.ms || 900); }
+          else if (m.type === "aimed" && mine) {
+            const n = m.of > 1 ? `${m.big ? "the great arrow" : `arrow ${m.shot} of ${m.of}`} · ` : "";
+            const slew = m.slain ? `slew <b>${m.slain}</b>${m.hits?.length ? " · " : ""}` : "";
+            if (m.big) pop();
+            flash(slew || m.hits?.length ? `✦ ${n}${slew}${m.hits?.length ? `hit <b>${m.hits.join(", ")}</b>` : ""} ✦` : `${n}flew off into the night`, 3500);
+          }
+          else if (m.type === "ult") flash("✦ <b>Ginger</b> unleashes · the horde turns to ash ✦", 4000);
+          else if (m.type === "ghost" && mine && m.state === "dead") {
+            stopCarrying(); ghostBy = m.by === "fireball" ? "fireball" : m.by === "devtools" ? "Seer" : m.by; ghostUntil = Date.now() + (m.ms || 20000);
+            body.classList.add("ghost"); clearTimeout(flashTimer); tickGhost();
+            if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
+          }
+          else if (m.type === "ghost" && mine) { body.classList.remove("ghost"); clearTimeout(ghostTimer); teleported(); flash(m.how === "healer" ? "✦ the healer restores thee ✦" : "✦ thou art alive again ✦", 4000); }
+          else if (m.type === "healer" && mine) flash("the healer bows · “thou art in good health”", 3000);
+          else if (m.type === "horde" && m.state === "daemon") flash("☠ a <b>daemon</b> steps out of the moongate · dodge its fireballs ☠", 5000);
+          // Level 3: the horde (the ankh is the key to the moongate; waves of monsters).
+          else if (m.type === "horde" && (mine || !m.to)) {
+            if (m.state === "key") flash("✦ the ankh yearns for the moongate · <b>carry it there</b> ✦", 7000);
+            else if (m.state === "placed") flash("✦ the ankh rests on the moongate · <b>gather on it</b>, tap and wiggle ✦", 7000);
+            else if (m.state === "wave") flash(`☠ wave ${m.wave} · the horde comes through the moongate · <b>Magic Arrow</b> slays them ☠`, 8000);
+            else if (m.state === "stolen") flash(`☠ a ${m.kind} took <b>${m.name}</b> from the pack ☠`, 3000);
+            else if (m.state === "escaped") flash(`☠ the ${m.kind} escaped with <b>${m.name}</b> ☠`, 3500);
+            else if (m.state === "end") {
+              const me = document.querySelector("#me .name").textContent;
+              const won = (m.winners || []).includes(me);
+              const lost = m.lost ? ` · ${m.lost} reagent${m.lost === 1 ? "" : "s"} carried off` : "";
+              if (won) { teleported(); flash(`✦ <b>you</b> slew the most · ${m.top} · sparkles! ✦`, 6000); }
+              else flash(`${m.vanquished ? "✦ the horde is vanquished" : "✦ the horde retreats"}${m.winners?.length ? ` · <b>${m.winners.join(" & ")}</b> slew the most (${m.top})` : ""}${lost} ✦`, 6000);
+            }
+          }
+          else if (m.type === "slay" && mine) { pop(); flash(`✦ ${m.how === "charmed" ? "Ginger sent a" : m.how === "ashed" ? "Ginger turned a" : m.how === "banished" ? "you banished a" : "you slew a"} ${m.kind}${m.how === "ashed" ? " to ash" : ""} · <b>${m.count}</b> ✦`, 2000); }
+          else if (m.type === "hit" && mine) { pop(); flash(`✦ <b>${m.by}</b>’s magic arrow hit you ✦`, 3500); if (navigator.vibrate) navigator.vibrate([60, 40, 60]); }
+          else if (m.type === "quest" && m.state === "complete") flash(m.top ? `✦ all reagents gathered · <b>${m.top}</b> led the way ✦` : "✦ all reagents gathered ✦", 6000);
+          else if (m.type === "quest" && m.state === "level") flash(m.level === 0 ? `✦ ${m.goal} ✦` : `✦ level ${m.level} · ${m.goal} ✦`, 5000, m.tip ? { text: `codex · ${m.tip}`, ms: 7000 } : null); // the goal, then the codex's first note for the level
+          else if (m.type === "quest" && m.state === "mastered") flash(m.top ? `✦ every spell cast · <b>${m.top}</b> cast the most ✦` : "✦ every spell cast ✦", 6000);
+          else if (m.type === "quest" && m.state === "reset") flash("the reagents are scattered anew");
+          else if (m.type === "quest" && m.state === "filled") flash("✦ the pack is filled · <b>cast freely</b> ✦", 5000);
+        };
+        ws.onclose = (e) => {
+          stopCarrying();
+          if (e.code === 4001) { dead = true; body.classList.add("dead"); setStatus("disconnected by the Seer · rescan the QR code"); return; }
+          setStatus(`room <b>${room}</b> · offline, retrying…`);
+          setTimeout(connect, 2000);
+        };
+      }
+      connect();
+      const send = (obj) => { if (!dead && ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); };
+
+      // ---- mini-map: the Seer's glass ----
+      // `layout` brings the overlay's viewport size, the gain constants and the visible widgets;
+      // `pos` corrects the dot after a jump; everything else is dead-reckoned in flush().
+      const map = { w: 0, h: 0, gain: null, x: 0, y: 0 };
+      const mapEl = document.getElementById("map"), mapWidgets = document.getElementById("map-widgets"), mapMe = document.getElementById("map-me");
+      function drawMe() { mapMe.setAttribute("cx", map.x); mapMe.setAttribute("cy", map.y); }
+      function onLayout(m) {
+        if (!(m.w > 0 && m.h > 0)) return;
+        map.w = m.w; map.h = m.h; map.gain = m.gain || map.gain;
+        mapEl.style.setProperty("--ar", `${m.w} / ${m.h}`);
+        document.getElementById("map-svg").setAttribute("viewBox", `0 0 ${m.w} ${m.h}`);
+        mapMe.setAttribute("r", Math.round(m.w * 0.016));
+        mapWidgets.innerHTML = (m.widgets || []).map((b) => {
+          const x = b.x * m.w, y = b.y * m.h, w = b.w * m.w, h = b.h * m.h;
+          if (b.id === "moongate") return `<ellipse class="silhouette moongate" cx="${x + w / 2}" cy="${y + h / 2}" rx="${w / 2}" ry="${h / 2}"/>`;
+          if (b.id === "image") { // the ankh: loop, arms, stem, sized to its frame
+            const cx = x + w / 2, loopY = y + h * 0.27, rx = w * 0.17, ry = h * 0.14;
+            return `<g class="glyph-ankh"><ellipse cx="${cx}" cy="${loopY}" rx="${rx}" ry="${ry}"/><path d="M${cx} ${loopY + ry} V${y + h * 0.86} M${x + w * 0.2} ${y + h * 0.5} H${x + w * 0.8}"/></g>`;
+          }
+          return `<rect class="silhouette ${b.id}" x="${x}" y="${y}" width="${w}" height="${h}" rx="${Math.min(w, h) * 0.12}"/>`;
+        }).join("");
+        body.classList.add("mapped");
+        drawMe();
+      }
+      // The dot moves by the very fractions the stick sent (the overlay adds them with gain 1 and the same
+      // clamp); only a ghost's drift still applies at both ends. (The old swipe formula lives on in the
+      // overlay for terminal phones; `layout.gain` still carries it.)
+      function reckon(fx, fy) {
+        if (!map.w) return;
+        const g = body.classList.contains("ghost") ? (map.gain ? map.gain.ghost : 0.75) : 1;
+        map.x = Math.max(0, Math.min(map.w - 8, map.x + fx * map.w * g));
+        map.y = Math.max(0, Math.min(map.h - 8, map.y + fy * map.h * g));
+        drawMe();
+      }
+      // A tap on the map: the cursor jumps there (the overlay answers with a pos; a ring marks the tap).
+      function jumpTo(cx, cy) {
+        const r = mapEl.getBoundingClientRect();
+        const fx = Math.max(0, Math.min(1, (cx - r.left) / r.width)), fy = Math.max(0, Math.min(1, (cy - r.top) / r.height));
+        send({ type: "goto", x: +fx.toFixed(4), y: +fy.toFixed(4) });
+        if (map.w) { map.x = fx * map.w; map.y = fy * map.h; drawMe(); }
+        const ping = document.createElement("i");
+        ping.className = "ping"; ping.style.left = `${cx - r.left}px`; ping.style.top = `${cy - r.top}px`;
+        mapEl.appendChild(ping);
+        setTimeout(() => ping.remove(), 700);
+        if (navigator.vibrate) navigator.vibrate(20);
+      }
+
+      // ---- spellbook drawer ----
+      let spells = null, coolUntil = 0, coolTimer = 0, spellPage = 0;
+      const SPELLS_PER_PAGE = 4;
+      const spellName = (id) => (spells?.spells.find((s) => s.id === id)?.name) || id;
+      const ALL_REAGENTS = ["black-pearl", "blood-moss", "garlic", "ginseng", "mandrake-root", "nightshade", "spiders-silk", "sulfurous-ash"];
+      let bookSeen = false; // the drawer opens by itself the first time the spellbook appears (2026-10-02: a tester never found the tab)
+      function renderSpells() {
+        if (!spells || !spells.enabled) { body.classList.remove("spells", "book-open"); bookSeen = false; return; }
+        body.classList.add("spells");
+        if (!bookSeen) { bookSeen = true; body.classList.add("book-open"); flash("✦ the <b>spellbook</b> opens · tap a lit spell to cast ✦", 5000); if (navigator.vibrate) navigator.vibrate([40, 40, 40]); }
+        const stock = new Set(spells.stock || []);
+        const charges = spells.charges || {}; // casts a reagent still feeds
+        const returning = spells.returning || {}; // spent limited reagents: ms until back, as of spells.at
+        const elapsed = Date.now() - (spells.at || Date.now());
+        let anyReturning = false;
+        document.getElementById("spell-stock").innerHTML = ALL_REAGENTS.map((id) => {
+          let badge = charges[id] > 1 ? `<i>${charges[id]}</i>` : "";
+          if (returning[id] !== undefined) {
+            const left = Math.max(0, Math.ceil((returning[id] - elapsed) / 1000));
+            if (left > 0) { anyReturning = true; badge = `<i class="t">${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}</i>`; }
+          }
+          return `<span class="st"><img src="/assets/${id}.svg" alt="${id}" class="${stock.has(id) ? "have" : ""}">${badge}</span>`;
+        }).join("");
+        const cooling = Date.now() < coolUntil;
+        // Pages: the overlay says how many and which spell sits on which (an empty slot is
+        // "yet unwritten"); the drawer never grows. ‹ › turn the page.
+        const per = spells.perPage || SPELLS_PER_PAGE;
+        const pages = Math.max(1, spells.pages || Math.ceil(spells.spells.length / per));
+        spellPage = Math.min(Math.max(0, spellPage), pages - 1);
+        const shown = spells.spells.filter((s, i) => (s.page || Math.floor(i / per) + 1) === spellPage + 1).slice(0, per);
+        const blanks = per - shown.length;
+        document.getElementById("spell-cards").innerHTML = shown.map((s) => {
+          const can = s.recipe.every((r) => stock.has(r));
+          return `<button class="spell ${can && !cooling ? "can" : ""} ${cooling ? "cooling" : ""}" data-spell="${s.id}">
+            <b>${s.name}</b>
+            <span class="recipe">${s.recipe.map((r) => `<img src="/assets/${r}.svg" alt="${r}" class="${stock.has(r) ? "" : "missing"}">`).join("")}</span>
+            <small>${s.effect}</small>
+            ${cooling ? `<span class="cd">${Math.ceil((coolUntil - Date.now()) / 1000)}s</span>` : ""}
+          </button>`;
+        }).join("") + `<div class="spell unwritten"><b>?</b><span class="recipe">&nbsp;</span><small>a spell yet unwritten</small></div>`.repeat(blanks);
+        document.getElementById("spell-pager").innerHTML = pages > 1
+          ? `<button type="button" data-dir="-1" aria-label="previous page">‹</button><span>${spellPage + 1} / ${pages}</span><button type="button" data-dir="1" aria-label="next page">›</button>`
+          : "";
+        clearTimeout(coolTimer);
+        if (cooling || anyReturning) coolTimer = setTimeout(renderSpells, 1000);
+      }
+      document.getElementById("spell-tab").addEventListener("click", () => body.classList.toggle("book-open"));
+      document.getElementById("spell-pager").addEventListener("click", (e) => {
+        const b = e.target.closest("button");
+        if (!b || !spells) return;
+        const pages = Math.max(1, spells.pages || Math.ceil(spells.spells.length / (spells.perPage || SPELLS_PER_PAGE)));
+        spellPage = (spellPage + Number(b.dataset.dir) + pages) % pages;
+        renderSpells();
+        pop();
+      });
+      document.getElementById("spell-cards").addEventListener("click", (e) => {
+        const card = e.target.closest(".spell");
+        if (!card || !card.dataset.spell) return; // blanks fill the grid on a short page
+        if (Date.now() < coolUntil) { flash("wait a moment"); return; }
+        send({ type: "cast", spell: card.dataset.spell });
+        pop();
+      });
+
+      // ---- gestures: one pointer at a time; the pad is an analog stick ----
+      // 2026-10-04, after a playthrough with a tester ("like the N64 stick for Mario"): the
+      // thumb's displacement from where it landed is a velocity, held for as long as it is pushed,
+      // as in any mobile game's virtual stick. The origin is where the thumb landed, and it is
+      // invisible: the arrow stays put, the rim glows with the push, and the disc leans a little
+      // with the thumb as it always did (Bobby's corrections the same day: a disc that came under
+      // the thumb and followed it, and an arrow that slid and turned with the push, were "very
+      // strange / too complicated"; "it should be a static thing"; then "put back the joystick
+      // moving with the thumb as it's being swiped"). Nothing moves inside the dead zone, the speed ramps on a mild curve
+      // and is full at STICK_FULL_PX (pushing further adds nothing), and lifting stops dead (no
+      // inertia); to stop without lifting, bring the thumb back to where it landed.
+      // A thumb at rest for HOLD_MS grabs: at the landing it may drift HOLD_SLOP_PX and still
+      // grab (a real thumb does; the origin re-centres under it when the hold fires, so the drift
+      // does not creep on), and later in the stroke a true stop (inside the dead zone) re-arms it,
+      // so a player can steer onto a reagent, ease off, grab, push on and lift to drop without
+      // lifting in between (such a rest-hold takes reagents and trinkets, never furniture).
+      // The phone integrates its own velocity and sends the distances as fractions of the
+      // overlay's viewport with `stick: true` (no acceleration at the other end), so the dot on
+      // the map and the cursor on the stage sum the very same numbers.
+      const STICK_DEAD_PX = 12;    // thumb jitter: nothing moves inside this (~2 mm)
+      const STICK_FULL_PX = 64;    // full speed from here on (Mario reads 64 of the N64 stick's 80)
+      const STICK_CURVE = 1.6;     // response: a mild power curve (fine control low, the run at the top)
+      const STICK_FLOOR = 0.0125;  // stage widths per second at the dead-zone edge (19 px/s on a 1536 stage)
+      const STICK_MAX = 0.26;      // stage widths per second at full push (400 px/s: about 4 s across; Bobby 2026-10-04: 800 was "way too fast", "a 50% reduction")
+      const STICK_EASE_MS = 60;    // the velocity follows the push with this time constant
+      const HOLD_MS = 350, TAP_MOVE_PX = 10, HOLD_SLOP_PX = 28, SEND_MS = 33, DBLTAP_MS = 350;
+      const FOLLOW = 0.3, FOLLOW_MAX = 80; // the disc leans this much of the drag with the thumb, at most this far
+      const STAGE_FALLBACK = { w: 1536, h: 960 }; // until the overlay's layout arrives
+      let active = null; // the stroke: see pointerdown
+      let lastTapAt = 0;
+      const pad = document.getElementById("pad");
+
+      // Send what the stick covered since the last batch (fractions of the overlay's viewport); the dot moves the same.
+      function flush(now = performance.now()) {
+        if (!active) return;
+        const dt = active.lastSend ? Math.min(500, Math.round(now - active.lastSend)) : SEND_MS;
+        active.lastSend = now;
+        const { accX, accY } = active;
+        if (Math.abs(accX) < 0.01 && Math.abs(accY) < 0.01) return;
+        active.accX = 0; active.accY = 0;
+        const fx = +(accX / (map.w || STAGE_FALLBACK.w)).toFixed(6), fy = +(accY / (map.h || STAGE_FALLBACK.h)).toFixed(6);
+        send({ type: "move", dx: fx, dy: fy, dt, stick: true });
+        reckon(fx, fy);
+      }
+      // One frame of the stick: displacement → eased velocity → distance covered, and the knob's look.
+      function frame(now) {
+        if (!active) return;
+        active.raf = requestAnimationFrame(frame);
+        const dt = active.lastFrame ? Math.min(50, now - active.lastFrame) : 16;
+        active.lastFrame = now;
+        const dx = active.tx - active.bx, dy = active.ty - active.by, d = Math.hypot(dx, dy);
+        let vx = 0, vy = 0, m = 0;
+        if (d > STICK_DEAD_PX) {
+          m = Math.min(1, (d - STICK_DEAD_PX) / (STICK_FULL_PX - STICK_DEAD_PX));
+          const speed = (STICK_FLOOR + (STICK_MAX - STICK_FLOOR) * Math.pow(m, STICK_CURVE)) * (map.w || STAGE_FALLBACK.w); // overlay px/s
+          vx = (dx / d) * speed; vy = (dy / d) * speed;
+        }
+        const k = 1 - Math.exp(-dt / STICK_EASE_MS);
+        active.vx += (vx - active.vx) * k; active.vy += (vy - active.vy) * k;
+        if (!m && Math.hypot(active.vx, active.vy) < 2) { active.vx = 0; active.vy = 0; } // settled
+        active.accX += (active.vx * dt) / 1000; active.accY += (active.vy * dt) / 1000;
+        pushLook(m);
+        if (now - active.lastSend >= SEND_MS) flush(now);
+      }
+      // The rim ring in your colour, as bright as the push.
+      function pushLook(m) { discBox.style.setProperty("--push", m.toFixed(2)); }
+      // The disc leans with the thumb (from where it landed), a little; home on lift.
+      function follow(fx, fy) { discBox.style.setProperty("--fx", `${fx}px`); discBox.style.setProperty("--fy", `${fy}px`); }
+      function pop() { body.classList.add("pop"); setTimeout(() => body.classList.remove("pop"), 160); }
+      // The hold: fires after HOLD_MS at rest and re-centres the origin under the thumb. `rest` = re-armed by a
+      // stop later in the stroke: reagents and trinkets only (never furniture), and no buzz until the grab takes.
+      function arm(rest) {
+        if (!active || active.armed || body.classList.contains("carrying")) return;
+        active.armed = true;
+        active.holdTimer = setTimeout(() => {
+          if (!active) return;
+          active.armed = false; active.held = true; active.band = STICK_DEAD_PX; // from now on only a true stop re-arms
+          active.bx = active.tx; active.by = active.ty;
+          send(rest ? { type: "hold", rest: true } : { type: "hold" });
+          if (!rest) { body.classList.add("hold"); if (navigator.vibrate) navigator.vibrate(35); } // a buzz says it took
+        }, HOLD_MS);
+      }
+      function disarm() { if (!active || !active.armed) return; active.armed = false; clearTimeout(active.holdTimer); }
+
+      pad.addEventListener("pointerdown", (e) => {
+        if (active || dead) return;
+        e.preventDefault();
+        audioCtx(); // a touch unlocks sound for later meows
+        pad.setPointerCapture(e.pointerId);
+        active = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: Date.now(), onMap: !!e.target.closest("#map"),
+          bx: e.clientX, by: e.clientY, tx: e.clientX, ty: e.clientY, // the origin and the thumb
+          moved: false, held: false, armed: false, inBand: true, band: HOLD_SLOP_PX, holdTimer: 0,
+          vx: 0, vy: 0, accX: 0, accY: 0, lastFrame: 0, lastSend: 0, raf: 0 };
+        if (!active.onMap) { // a press on the map is a jump, never a grab nor a push
+          arm(false);
+          active.raf = requestAnimationFrame(frame);
+        }
+        if (navigator.wakeLock && !window.__wl) navigator.wakeLock.request("screen").then((l) => (window.__wl = l)).catch(() => {});
+      });
+      pad.addEventListener("pointermove", (e) => {
+        if (!active || e.pointerId !== active.id) return;
+        e.preventDefault();
+        active.tx = e.clientX; active.ty = e.clientY;
+        if (!active.moved && Math.hypot(e.clientX - active.x0, e.clientY - active.y0) > TAP_MOVE_PX) active.moved = true; // no longer a tap
+        if (active.onMap) return;
+        if (active.moved) follow(Math.max(-FOLLOW_MAX, Math.min(FOLLOW_MAX, (e.clientX - active.x0) * FOLLOW)),
+                                Math.max(-FOLLOW_MAX, Math.min(FOLLOW_MAX, (e.clientY - active.y0) * FOLLOW)));
+        const d = Math.hypot(active.tx - active.bx, active.ty - active.by);
+        const inBand = d <= active.band;
+        if (inBand === active.inBand) return;
+        active.inBand = inBand;
+        if (inBand) arm(true); // a stop later in the stroke: a rest-hold
+        else { disarm(); active.band = STICK_DEAD_PX; if (!body.classList.contains("carrying")) body.classList.remove("hold"); }
+      });
+      const end = (e) => {
+        if (!active || e.pointerId !== active.id) return;
+        e.preventDefault();
+        disarm();
+        cancelAnimationFrame(active.raf);
+        active.vx = 0; active.vy = 0; // lifting stops dead
+        flush();
+        const held = active.held;
+        body.classList.remove("hold");
+        if (!active.moved && !held && Date.now() - active.t0 < HOLD_MS) {
+          if (active.onMap) { jumpTo(active.x0, active.y0); lastTapAt = 0; }
+          else {
+            // Two quick taps = double tap (opens the backpack when the cursor is on it).
+            const now = Date.now();
+            if (now - lastTapAt < DBLTAP_MS) { send({ type: "dbltap" }); lastTapAt = 0; setTimeout(blink, 300 + Math.random() * 200); }
+            else { send({ type: "tap" }); lastTapAt = now; }
+          }
+          pop();
+        }
+        send({ type: "release" }); // drops a carried reagent (ignored if nothing is held)
+        pushLook(0);
+        follow(0, 0);
+        active = null;
+      };
+      pad.addEventListener("pointerup", end);
+      pad.addEventListener("pointercancel", end);
+      document.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
+      document.addEventListener("contextmenu", (e) => e.preventDefault());
+    </script>
+  </body>
+</html>

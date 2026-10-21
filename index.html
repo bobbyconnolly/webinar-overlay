@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Webinar Overlay</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+  <body>
+    <!-- Gold edge glow: visible only while the overlay is interactive. -->
+    <div id="edge-glow"></div>
+
+    <!-- Mode pill: status, lock toggle, reset (two-step), quit. Collapses (‹) to the lock
+         icon alone; the mode text, Reset and the quit ✕ hide. Fixed top-right, not draggable. -->
+    <div id="control" class="pill">
+      <span id="mode-dot"></span>
+      <span id="mode-label">…</span>
+      <button id="lock-btn" type="button">
+        <svg class="ico ico-locked" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M5 7V5a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+        <svg class="ico ico-open" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="currentColor"/><path d="M11 7V4a3 3 0 0 0-6 0" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+        <span class="txt">…</span>
+      </button>
+      <button id="reset-btn" type="button" title="Back to level 0: the bare stage, the ankh waits; progress cleared">Reset game</button>
+      <span id="reset-confirm">
+        reset the game?
+        <button id="reset-yes" type="button">Yes</button>
+        <button id="reset-no" type="button">No</button>
+      </span>
+      <button id="dev-btn" type="button" title="Devtools (Ctrl+Shift+D)">⚙</button>
+      <button id="hide-btn" type="button" title="Hide the widgets (Ctrl+Shift+H)">
+        <svg class="ico eye-open" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+        <svg class="ico eye-closed" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9c2 3 5 5 9 5s7-2 9-5M7 13l-1.5 2.5M12 14v3M17 13l1.5 2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button id="quit-btn" type="button" title="Quit overlay">✕</button>
+      <button id="collapse-btn" type="button" title="Collapse to the lock">‹</button>
+    </div>
+
+    <!-- Widget 1: text card (parchment). Double-click (or a phone double-tap on it) rolls it
+         up into the scroll icon and back. -->
+    <section class="widget parchment" data-widget="text" style="left: 80px; top: 140px">
+      <div class="codex-body">
+        <h1>The Codex of Ultimate Wisdom</h1>
+        <!-- Pages by level (codex.ts shows one level's set and heralds each level change). Level 0 is
+             lore; levels 1–3 are the Seer's notes, one tip per page in big type (Discord shows the stage
+             at half scale); data-phone is the plain wording the phones get. Phones tap the codex to turn,
+             double-tap to roll it up; the Seer uses ‹ › and double-click. -->
+        <div class="codex-page on" data-level="0">
+          <p>“Welcome, Seeker, to the Seer's glass: reach in with thy cursor and make thyself at home.”</p>
+          <p class="rune" title="Britannia, in runic">ᛒᚱᛁᛏᚪᚾᚾᛁᚪ</p>
+        </div>
+        <div class="codex-page" data-level="0">
+          <img class="codex-art" src="/cat-ginger.svg" alt="Ginger" draggable="false" />
+          <p>
+            “Ginger was the Seer's own cat, orange as sulfurous ash and twice as warm. Through long
+            nights of study he sat upon the very scrolls the Seer read.”
+          </p>
+          <p class="rune" title="Ginger, in runic">ᚷᛁᚾᚷᛖᚱ</p>
+        </div>
+        <div class="codex-page" data-level="0">
+          <img class="codex-art" src="/trinkets/yarn.svg" alt="A ball of yarn" draggable="false" />
+          <p>“Knick-knacks lie about the stage. They do nothing. Ginger disagrees.”</p>
+          <p class="hint codex-hint">double-click to roll up</p>
+        </div>
+        <!-- Level 1: the gathering -->
+        <div class="codex-page tip" data-level="1" data-phone="hold a reagent to grab it · swipe to carry · lift to drop">
+          <p>“Hold a reagent to take it, swipe to carry, lift thy thumb to let go.”</p>
+        </div>
+        <div class="codex-page tip" data-level="1" data-phone="drop it inside the pack, not on its rim">
+          <p>“Into the mouth of the pack, not upon its rim.”</p>
+        </div>
+        <div class="codex-page tip" data-level="1" data-phone="your grip slips after a few seconds · drop and grab again">
+          <p>“Thy grip tires after a few breaths: drop, and take again.”</p>
+        </div>
+        <div class="codex-page tip" data-level="1" data-phone="keep moving while you carry · a still hand is a bird's chance">
+          <p>“A hand that rests is a bird's chance.”</p>
+        </div>
+        <div class="codex-page tip" data-level="1" data-phone="Ginger means no harm · he is a cat">
+          <p>“The cat means no harm. He means nothing at all. He is a cat.”</p>
+        </div>
+        <!-- Level 2: the spells -->
+        <div class="codex-page tip" data-level="2" data-phone="your spellbook is the drawer at the bottom of your screen">
+          <p>“Thy spellbook waits at the foot of thy glass.”</p>
+        </div>
+        <div class="codex-page tip" data-level="2" data-phone="spells spend from the shared pack · gather again when it runs dry">
+          <p>“Every spell is paid from the shared pack. Gather again when it runs dry.”</p>
+        </div>
+        <div class="codex-page tip" data-level="2" data-phone="Magic Arrow: cast, then swipe to shoot · four arrows, the last one charged">
+          <p>“Magic Arrow: nock, then swipe. Four fly, and the last is charged.”</p>
+        </div>
+        <div class="codex-page tip" data-level="2" data-phone="mandrake root and spider's silk are scarce · they come back in time">
+          <p>“Mandrake and silk are scarce; they return in their own time.”</p>
+        </div>
+        <div class="codex-page tip" data-level="2" data-phone="at night, sweep your cursor through the moonglow wisps">
+          <p>“By night, sweep thy cursor through the moonglow.”</p>
+        </div>
+        <div class="codex-page tip" data-level="2" data-phone="tap the map at the top of your phone to jump there">
+          <p>“Tap the map on thy glass to leap.”</p>
+        </div>
+        <div class="codex-page tip" data-level="2" data-phone="Create Food: feed Ginger and he will remember you">
+          <p>“Feed the cat, and he remembers.”</p>
+        </div>
+        <!-- Level 3: the horde -->
+        <div class="codex-page tip" data-level="3" data-phone="carry the ankh onto the moongate, then touch it together">
+          <p>“The ankh is the key. Carry it to the moongate and wake it together.”</p>
+        </div>
+        <div class="codex-page tip" data-level="3" data-phone="skeletons raid the pack · ghouls hunt you · keep clear of their teeth">
+          <p>“Skeletons raid the pack. Ghouls hunt thee. Mind their teeth.”</p>
+        </div>
+        <div class="codex-page tip" data-level="3" data-phone="arrows slay · Lightning stuns · Teleport banishes · a fed Ginger charms">
+          <p>“Arrows slay. Lightning stuns. Teleport banishes. A fed cat charms.”</p>
+        </div>
+        <div class="codex-page tip" data-level="3" data-phone="a ghost? drift to the healer by the signpost">
+          <p>“A ghost drifts to the healer by the signpost; he asks nothing.”</p>
+        </div>
+        <div class="codex-page tip" data-level="3" data-phone="Night Sight brings a minute of daylight to the siege">
+          <p>“Night Sight buys a minute of day.”</p>
+        </div>
+        <div class="codex-page tip" data-level="3" data-phone="each wave is bigger than the last">
+          <p>“Each wave is larger than the last.”</p>
+        </div>
+        <div class="codex-nav">
+          <button id="codex-prev" type="button" title="Previous page">‹</button>
+          <span id="codex-pageno">1 / 3</span>
+          <button id="codex-next" type="button" title="Next page">›</button>
+        </div>
+      </div>
+      <img class="scroll" src="/scroll.svg" alt="Rolled codex" draggable="false" title="Double-click to unroll" />
+    </section>
+
+    <!-- Widget 2: image (framed ankh) -->
+    <figure class="widget frame" data-widget="image" style="left: 560px; top: 160px">
+      <img src="/ankh.svg" alt="Ankh" draggable="false" />
+      <figcaption>Ankh</figcaption>
+    </figure>
+
+    <!-- Widget 3: animated moongate. data-handle: dragged only by its caption (the .handle);
+         a click on the gate itself stays a teleport. -->
+    <div class="widget moongate-wrap" data-widget="moongate" data-handle style="left: 900px; top: 120px">
+      <div class="moongate"></div>
+      <div class="caption handle">
+        <span class="rune" title="Moongate, in runic">ᛗᚩᚩᚾᚷᚪᛏᛖ</span>
+        <span class="caption-text">moongate</span>
+      </div>
+    </div>
+
+    <!-- Widget 8: signpost with a lantern. Decoration: the lantern lights up at night
+         (Night Sight) with a circular glow. You can drag it; phones cannot carry it. -->
+    <figure class="widget signpost" data-widget="signpost" style="left: 1380px; top: 150px">
+      <div class="lantern-glow"></div>
+      <svg viewBox="0 0 120 200" width="120" height="200" aria-label="Signpost with a lantern">
+        <defs>
+          <pattern id="bricks" width="20" height="12" patternUnits="userSpaceOnUse">
+            <rect width="20" height="12" fill="#8c8c8c" />
+            <path d="M0 6 H20 M10 0 V6 M0 6 V12 M20 6 V12" stroke="#5a5a5a" stroke-width="1.2" fill="none" />
+          </pattern>
+        </defs>
+        <!-- patch of dirt -->
+        <ellipse cx="60" cy="190" rx="46" ry="8" fill="#5a3d24" />
+        <ellipse cx="60" cy="189" rx="36" ry="5" fill="#6b4a2b" />
+        <circle cx="36" cy="190" r="1.6" fill="#3f2a16" /><circle cx="86" cy="191" r="1.3" fill="#3f2a16" /><circle cx="72" cy="194" r="1" fill="#3f2a16" />
+        <!-- the far sign: behind the post, seen at an angle, pointing up and to the right; too foreshortened to read -->
+        <polygon points="58,72 98,50 108,54 102,62 62,82" fill="#b8955a" stroke="#4a2e10" stroke-width="1.4" />
+        <path d="M68 70 L90 58 M70 75 L86 66" stroke="#4a2e10" stroke-width="1" opacity="0.45" />
+        <!-- post -->
+        <rect x="50" y="42" width="20" height="150" fill="url(#bricks)" stroke="#3f3f3f" stroke-width="1.5" />
+        <rect x="46" y="36" width="28" height="7" rx="1.5" fill="#777" stroke="#3f3f3f" stroke-width="1.5" />
+        <!-- vines climbing from the dirt -->
+        <path d="M52 190 C40 170 60 160 48 140 C40 126 58 118 50 104" fill="none" stroke="#3f7a2f" stroke-width="2.2" stroke-linecap="round" />
+        <path d="M70 190 C80 176 66 166 74 150 C80 138 68 130 72 122" fill="none" stroke="#3f7a2f" stroke-width="2" stroke-linecap="round" />
+        <ellipse cx="44" cy="168" rx="5" ry="2.8" fill="#4f9a3a" transform="rotate(-35 44 168)" />
+        <ellipse cx="56" cy="152" rx="4.5" ry="2.6" fill="#5aa844" transform="rotate(30 56 152)" />
+        <ellipse cx="42" cy="132" rx="4.5" ry="2.6" fill="#4f9a3a" transform="rotate(-20 42 132)" />
+        <ellipse cx="54" cy="112" rx="4" ry="2.4" fill="#5aa844" transform="rotate(40 54 112)" />
+        <ellipse cx="78" cy="172" rx="4.5" ry="2.6" fill="#5aa844" transform="rotate(25 78 172)" />
+        <ellipse cx="66" cy="156" rx="4" ry="2.4" fill="#4f9a3a" transform="rotate(-30 66 156)" />
+        <ellipse cx="78" cy="136" rx="4.5" ry="2.6" fill="#5aa844" transform="rotate(35 78 136)" />
+        <path d="M28 190 l3 -8 l2 8 M88 190 l-2 -9 l4 9 M22 191 l4 -6 l1 6 M96 191 l3 -6 l1 6" stroke="#4f9a3a" stroke-width="1.5" fill="none" stroke-linecap="round" />
+        <!-- the near sign, pointing left -->
+        <polygon points="62,96 20,96 8,106 20,116 62,116" fill="#d9b26a" stroke="#5a3a14" stroke-width="1.5" />
+        <text x="37" y="110" text-anchor="middle" font-family="Georgia, serif" font-size="9.5" font-variant="small-caps" letter-spacing="0.8" fill="#3a2410">ankh</text>
+        <!-- two birds on the cap; a click or a cursor tap sends one off, it is back in a while -->
+        <g class="bird" data-color="red" transform="translate(53 29)" style="--fx: -150px">
+          <path class="wing" d="M1 -2 L-6 -9 L-2 -1 Z" fill="#a8281f" />
+          <ellipse cx="0" cy="0" rx="6" ry="4" fill="#d8402f" />
+          <circle cx="-5" cy="-3" r="3" fill="#d8402f" />
+          <path d="M-8 -3 L-11.5 -2 L-8 -1 Z" fill="#f2b233" />
+          <path d="M5 0 L10.5 -3 L9.5 1.5 Z" fill="#a8281f" />
+          <circle cx="-6" cy="-3.6" r="0.7" fill="#111" />
+          <path d="M-2 4 L-2 7 M1.5 4 L1.5 7" stroke="#f2b233" stroke-width="1" />
+        </g>
+        <g class="bird" data-color="blue" transform="translate(67 29) scale(-1 1)" style="--fx: 150px">
+          <path class="wing" d="M1 -2 L-6 -9 L-2 -1 Z" fill="#2b5aa0" />
+          <ellipse cx="0" cy="0" rx="6" ry="4" fill="#3a7bd5" />
+          <circle cx="-5" cy="-3" r="3" fill="#3a7bd5" />
+          <path d="M-8 -3 L-11.5 -2 L-8 -1 Z" fill="#f2b233" />
+          <path d="M5 0 L10.5 -3 L9.5 1.5 Z" fill="#2b5aa0" />
+          <circle cx="-6" cy="-3.6" r="0.7" fill="#111" />
+          <path d="M-2 4 L-2 7 M1.5 4 L1.5 7" stroke="#f2b233" stroke-width="1" />
+        </g>
+        <!-- bracket and lantern -->
+        <path d="M70 46 H100 V54" fill="none" stroke="#3a3a3a" stroke-width="3" stroke-linecap="round" />
+        <path d="M86 46 L96 36 M100 36 V46" fill="none" stroke="#3a3a3a" stroke-width="2" />
+        <circle cx="100" cy="56" r="2.5" fill="none" stroke="#3a3a3a" stroke-width="1.5" />
+        <polygon points="90,62 110,62 106,58 94,58" fill="#3a3a3a" />
+        <rect class="glass" x="91" y="62" width="18" height="26" rx="2" stroke="#3a3a3a" stroke-width="1.5" />
+        <path d="M100 62 V88 M91 75 H109" stroke="#3a3a3a" stroke-width="1" opacity="0.6" />
+        <path class="flame" d="M100 70 C104 75 103 80 100 83 C97 80 96 75 100 70 Z" fill="#ffb347" />
+        <polygon points="90,88 110,88 107,92 93,92" fill="#3a3a3a" />
+      </svg>
+    </figure>
+
+    <!-- Widget 4: QR code + room + relay status -->
+    <div class="widget qr" data-widget="qr" data-status="offline" style="left: 80px; top: 470px">
+      <!-- Collapsed (one − below 1×): only this rune stone shows; a click on it unfolds the widget. -->
+      <div class="qr-icon-wrap">
+        <img id="qr-icon" class="qr-icon" src="/rune-disk.svg" alt="Rune stone (the QR code, folded away)" draggable="false" title="Click to show the QR code" />
+        <span class="dot"></span>
+      </div>
+      <div id="qr-small" class="qr-small"></div>
+      <div class="qr-meta">
+        <div class="qr-room-line">room <b id="qr-room">----</b></div>
+        <div class="qr-status-line"><span class="dot"></span><span id="qr-status">…</span></div>
+        <div class="qr-actions">
+          <button id="qr-expand" type="button" title="Full screen (Ctrl+Shift+Q)">Expand</button>
+          <button id="qr-rotate" type="button" title="New room code, kicks everyone (Ctrl+Shift+R)">Rotate</button>
+          <button id="qr-kill" type="button" title="Disconnect every phone, same code (Ctrl+Shift+X)">Kick all</button>
+        </div>
+        <div class="qr-actions qr-size">
+          <button id="qr-smaller" class="round" type="button" title="Smaller QR">−</button>
+          <button id="qr-bigger" class="round" type="button" title="Bigger QR (for late joiners, without going full screen)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Widget 5: backpack, the drop target. Double-click (or a phone double-tap on it) opens the gump. -->
+    <div class="widget backpack" data-widget="backpack" style="left: 1180px; top: 640px">
+      <img id="pack" src="/backpack/backpack.svg" alt="Backpack" draggable="false" title="Double-click to look inside" />
+      <span id="pack-badge" class="pack-badge empty">0</span>
+    </div>
+
+    <!-- Widget 7: the open backpack (UO "gump"): a bordered space seen from above. Its own
+         widget so it can sit anywhere and stay open. Phones can open it, only you close it. -->
+    <div class="widget gump" data-widget="gump" style="left: 880px; top: 380px">
+      <div class="gump-title">
+        <span>Backpack</span>
+        <span class="gump-count" id="gump-count">0 / 8</span>
+        <button id="gump-close" type="button" title="Close">✕</button>
+      </div>
+      <div id="gump-items" class="gump-items"></div>
+    </div>
+
+    <!-- Widget 6: goals, level 1 only (CSS hides it at level 0 and from level 2 on: the spell strip
+         and the horde board take over, each shown only while something happens; the codex has the tips). -->
+    <div class="widget quest" data-widget="quest" style="left: 80px; top: 700px">
+      <div class="quest-level">Level 1 · gather the reagents</div>
+      <div class="quest-head"><b id="quest-count">0 / 8</b> reagents in the pack</div>
+      <ul id="quest-list"></ul>
+      <div class="quest-tally-head">delivered by</div>
+      <ul id="quest-tally"></ul>
+    </div>
+
+    <!-- Reagents lying on the overlay are appended here. -->
+    <div id="items"></div>
+    <!-- Trinkets (knick-knacks that do nothing) lie here from level 0 on; trinkets.ts fills it. -->
+    <div id="trinkets"></div>
+
+    <!-- Spell effects: night layer, screen flash, bolts/arrows, and the announcement. -->
+    <div id="night"></div>
+    <!-- Ginger's ultimate (horde.ts): everything below #fx goes dark while the beams sweep. -->
+    <div id="ult"></div>
+    <!-- Night Sight's moonglow hunt: the wisps (a small flock on a canvas), and the scoreboard while the night lasts. -->
+    <canvas id="moonglow"></canvas>
+    <div id="moonglow-board">
+      <div class="mg-title">✦ moonglow ✦</div>
+      <ul id="moonglow-list"></ul>
+    </div>
+    <!-- Level 3: the horde's board while a wave runs (slayers, monsters left, time draining). -->
+    <div id="horde-board">
+      <div class="mg-title">☠ the horde ☠</div>
+      <ul id="horde-list"></ul>
+      <div class="hb-bar"><i id="horde-bar"></i></div>
+    </div>
+    <!-- Level 2's progress (levels.ts): the five spells, the cast ones lit, for a few seconds after each cast. -->
+    <div id="spell-strip">
+      <div class="mg-title">✦ spells ✦</div>
+      <ul id="spell-strip-list"></ul>
+    </div>
+    <div id="flash"></div>
+    <div id="fx"></div>
+    <div id="spell-banner"></div>
+    <div id="quest-banner">
+      <span class="banner-star">✦</span>
+      <span class="banner-text"><span id="quest-banner-text">Thou hast gathered all the reagents</span><small id="quest-banner-sub"></small></span>
+      <span class="banner-star">✦</span>
+      <img class="banner-cat" src="/cat-ginger.svg" alt="" draggable="false" />
+    </div>
+
+    <!-- Full-screen QR (Ctrl+Shift+Q). Margin below carries the room code. -->
+    <div id="qr-full" data-status="offline">
+      <button id="qr-close" type="button" title="Close (Ctrl+Shift+Q / Esc / click anywhere)">✕</button>
+      <div class="qr-full-card">
+        <div id="qr-big" class="qr-big"></div>
+        <div class="qr-full-margin">
+          <div class="qr-full-room" id="qr-full-room">----</div>
+          <div class="qr-full-sub">
+            scan to move a cursor on this screen · <span id="qr-full-host"></span>
+            <span class="qr-full-offline">· OFFLINE</span>
+          </div>
+          <div class="qr-full-close-hint">
+            close: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Q</kbd> · or hold <kbd>Ctrl</kbd>+<kbd>Shift</kbd> and click anywhere
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- The ending (Ctrl+Shift+E, or "Ending" in devtools): a full-screen QR that sends everyone to Mystica. -->
+    <div id="end-full" data-status="unconfigured">
+      <button id="end-close" type="button" title="Close (Ctrl+Shift+E / Esc / click the backdrop)">✕</button>
+      <div class="end-card">
+        <div class="end-head">Now play Mystica</div>
+        <div id="end-big" class="end-big"></div>
+        <div class="end-margin">
+          <div class="end-sub">scan with your phone · hold it sideways · type a name and you are in · <span id="end-host"></span></div>
+          <div class="end-close-hint">close: <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd> · or <kbd>Esc</kbd></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sparkle trails (the ankh's blessing) are drawn here, just under the cursors. -->
+    <canvas id="sparkles"></canvas>
+
+    <!-- Phone cursors are appended here. -->
+    <div id="cursors"></div>
+
+    <!-- Devtools (Ctrl+Shift+D, or ⚙ in the pill): cast spells from the PC with no reagents,
+         cooldowns or level gate, as the Seer or as the phantom you drive; Restart / Next walk the
+         game from level 0 one phase at a time. Nothing here is spent or tallied. Presenter only. -->
+    <div id="dev">
+      <div class="dev-head">
+        <b>devtools</b>
+        <button id="dev-close" type="button" title="Close (Ctrl+Shift+D)">✕</button>
+      </div>
+      <!-- The game from the start: Restart = level 0; Next = the next phase along the real path. -->
+      <div class="qr-actions dev-game">
+        <button id="dev-restart" type="button" title="Level 0: the bare stage, the ankh waits; progress cleared">Restart</button>
+        <button id="dev-end" type="button" title="The ending: the full-screen QR that sends everyone to Mystica (Ctrl+Shift+E)">Ending</button>
+        <button id="dev-next" class="primary" type="button" title="The next phase: awaken the ankh, fill the pack, master the spells, place the ankh, open the gate, end the wave…">Next ▶</button>
+      </div>
+      <div id="dev-phase" class="dev-phase">…</div>
+      <!-- Spells, free: as the Seer, or as the phantom the mouse drives. -->
+      <div id="dev-spells" class="qr-actions dev-sect" title="Cast free, as the Seer or as the phantom you drive (Magic Arrow then nocks on it)"></div>
+      <!-- The stage: things that happen by themselves in the game, on demand here. -->
+      <div class="qr-actions dev-sect">
+        <button id="dev-night" type="button" title="Dark for ten minutes (Day ends it)">Night</button>
+        <button id="dev-monster" type="button" title="One skeleton or ghoul out of the gate, wave or not">Monster</button>
+        <button id="dev-daemon" type="button" title="A daemon out of the gate: it lobs slow fireballs at the nearest cursor">Daemon</button>
+        <button id="dev-ghost" type="button" title="The phantom you drive (else the first phone) becomes a ghost for 20 s, or revives">Ghost</button>
+        <button id="dev-gump" type="button" title="Open the backpack window">Open bag</button>
+        <button id="dev-cat" type="button" title="Ginger comes in to play: stalks a loose reagent, pounces, bats it away (level 1 does this by itself)">Ginger plays</button>
+        <button id="dev-bird" type="button" title="A signpost bird swoops on a loose reagent and drops it at the post (level 1 does this by itself)">Bird steals</button>
+        <button id="dev-scatter" type="button" title="Every reagent back onto the overlay, nothing collected">Scatter</button>
+        <!-- Only while a limited reagent (mandrake root, spider's silk) is spent and waiting to return (quest.ts names it). -->
+        <button id="dev-respawn" type="button" title="Bring the spent reagents back now instead of waiting">Respawn now</button>
+        <!-- The stage's sound cues (src/sounds.ts): mute / unmute; `npm run sounds` picks the clips. -->
+        <button id="dev-sound" type="button" title="Mute or unmute the stage's sound cues (pick them with: npm run sounds)">🔊</button>
+      </div>
+      <!-- Phantom Seekers: fake phones the mouse drives (phantom.ts). -->
+      <div class="qr-actions dev-sect">
+        <button id="dev-bot-add" type="button" title="A fake phone driven by your mouse: click = tap, press and hold = grab, double-click = double-tap, Esc = let go">+ Seeker</button>
+        <select id="dev-bot" title="Which phantom the mouse drives"></select>
+        <button id="dev-bot-possess" type="button" title="Drive the chosen phantom with the mouse (Esc releases)">Possess</button>
+        <button id="dev-bot-remove" type="button" title="That phantom leaves">− Seeker</button>
+      </div>
+      <div id="dev-phone" class="dev-status"></div>
+      <div id="dev-status" class="dev-status">nothing here is spent or tallied</div>
+    </div>
+    <!-- While a phantom Seeker is possessed and the overlay is interactive, this layer swallows the
+         pointer and turns it into the phone's gestures; the pill and the devtools stay above it. -->
+    <div id="possess"></div>
+  </body>
+</html>

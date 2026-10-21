@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="120" height="120">
+  <!-- Rolled-up codex: a parchment scroll with two rolls and a wax seal. Hand-drawn placeholder. -->
+  <defs>
+    <linearGradient id="p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3e4bd"/><stop offset="1" stop-color="#d9c08c"/></linearGradient>
+    <linearGradient id="r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8d2a0"/><stop offset="0.5" stop-color="#f6e9c8"/><stop offset="1" stop-color="#b8975c"/></linearGradient>
+  </defs>
+  <path d="M14 20 H50 V44 H14 Z" fill="url(#p)" stroke="#8a6a3a" stroke-width="1.5"/>
+  <path d="M20 27 H38 M20 32 H36 M20 37 H34" stroke="#8a6a3a" stroke-width="1.2" opacity=".55" stroke-linecap="round"/>
+  <rect x="8" y="12" width="48" height="12" rx="6" fill="url(#r)" stroke="#8a6a3a" stroke-width="1.5"/>
+  <circle cx="10" cy="18" r="5" fill="#c9a86a" stroke="#8a6a3a" stroke-width="1.5"/>
+  <circle cx="54" cy="18" r="5" fill="#c9a86a" stroke="#8a6a3a" stroke-width="1.5"/>
+  <rect x="8" y="42" width="48" height="12" rx="6" fill="url(#r)" stroke="#8a6a3a" stroke-width="1.5"/>
+  <circle cx="10" cy="48" r="5" fill="#c9a86a" stroke="#8a6a3a" stroke-width="1.5"/>
+  <circle cx="54" cy="48" r="5" fill="#c9a86a" stroke="#8a6a3a" stroke-width="1.5"/>
+  <circle cx="44" cy="33" r="5.5" fill="#a0262b" stroke="#5e1316" stroke-width="1.2"/>
+  <path d="M41.5 33 l2 2 l3.5 -4" fill="none" stroke="#f0c9c9" stroke-width="1.2" stroke-linecap="round"/>
+</svg>

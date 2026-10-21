@@ -1,0 +1,145 @@
+{
+  "picks": {
+    "meow": {
+      "n": 4,
+      "title": "Kitten Mew · kitten_mew-1",
+      "source": "oga",
+      "author": "antumdeluge",
+      "url": "https://opengameart.org/content/kitten-mew",
+      "license": "CC0",
+      "seconds": 0.96,
+      "file": "meow.mp3"
+    },
+    "purr": {
+      "n": 2,
+      "title": "Cat Purr & Meow · cat_purractive_loop",
+      "source": "oga",
+      "author": "kerzoven",
+      "url": "https://opengameart.org/content/cat-purr-meow",
+      "license": "CC0",
+      "seconds": 4,
+      "file": "purr.mp3"
+    },
+    "pounce": {
+      "n": 5,
+      "title": "Thwack Sounds · thwack-07",
+      "source": "oga",
+      "author": "antumdeluge",
+      "url": "https://opengameart.org/content/thwack-sounds",
+      "license": "CC0",
+      "seconds": 0.41,
+      "file": "pounce.mp3"
+    },
+    "moongate": {
+      "n": 1,
+      "title": "Teleport · 172206_2437358-lq",
+      "source": "oga",
+      "author": "WolfTech",
+      "url": "https://opengameart.org/content/teleport",
+      "license": "CC0",
+      "seconds": 0.53,
+      "file": "moongate.mp3"
+    },
+    "lightning": {
+      "n": 4,
+      "title": "explosionCrunch_001",
+      "source": "kenney",
+      "author": "Kenney",
+      "url": "https://kenney.nl/assets/sci-fi-sounds",
+      "license": "CC0",
+      "seconds": 1.36,
+      "file": "lightning.mp3"
+    },
+    "arrow": {
+      "n": 4,
+      "title": "laserSmall_004",
+      "source": "kenney",
+      "author": "Kenney",
+      "url": "https://kenney.nl/assets/sci-fi-sounds",
+      "license": "CC0",
+      "seconds": 0.41,
+      "file": "arrow.mp3"
+    },
+    "ankh": {
+      "n": 3,
+      "title": "Bell Arpeggio 24 · 24_0",
+      "source": "oga",
+      "author": "cynicmusic",
+      "url": "https://opengameart.org/content/bell-arpeggio-24",
+      "license": "CC0",
+      "seconds": 2.48,
+      "file": "ankh.mp3"
+    },
+    "monster": {
+      "n": 6,
+      "title": "dice-shake-1",
+      "source": "kenney",
+      "author": "Kenney",
+      "url": "https://kenney.nl/assets/casino-audio",
+      "license": "CC0",
+      "seconds": 1.27,
+      "file": "monster.mp3"
+    },
+    "slay": {
+      "n": 1,
+      "title": "Hurt / Death sound effect for character · 1_8",
+      "source": "oga",
+      "author": "supermoneylife",
+      "url": "https://opengameart.org/content/hurt-death-sound-effect-for-character",
+      "license": "CC0",
+      "seconds": 1.79,
+      "file": "slay.mp3"
+    },
+    "ghost": {
+      "n": 4,
+      "title": "spaceTrash2",
+      "source": "kenney",
+      "author": "Kenney",
+      "url": "https://kenney.nl/assets/digital-audio",
+      "license": "CC0",
+      "seconds": 1.15,
+      "file": "ghost.mp3"
+    },
+    "fireball": {
+      "n": 1,
+      "title": "Fireball · 105016_1535323-lq",
+      "source": "oga",
+      "author": "WolfTech",
+      "url": "https://opengameart.org/content/fireball-1",
+      "license": "CC0",
+      "seconds": 1.73,
+      "file": "fireball.mp3"
+    },
+    "bird": {
+      "n": 2,
+      "title": "Bird chirping sounds · birdchirping071414",
+      "source": "oga",
+      "author": "uzairali001",
+      "url": "https://opengameart.org/content/bird-chirping-sounds",
+      "license": "CC0",
+      "seconds": 1.77,
+      "file": "bird.mp3"
+    },
+    "ult": {
+      "n": 1,
+      "title": "Magic Spell SFX · magical_1",
+      "source": "oga",
+      "author": "Arcanorum",
+      "url": "https://opengameart.org/content/magic-spell-sfx",
+      "license": "CC0",
+      "seconds": 1.61,
+      "file": "ult.mp3"
+    },
+    "wisp": {
+      "n": 4,
+      "title": "impactGlass_heavy_002",
+      "source": "kenney",
+      "author": "Kenney",
+      "url": "https://kenney.nl/assets/impact-sounds",
+      "license": "CC0",
+      "seconds": 0.24,
+      "file": "wisp.mp3"
+    }
+  },
+  "updated": "2026-10-04T15:36:09.619Z"
+}

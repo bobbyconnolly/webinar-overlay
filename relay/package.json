@@ -1,0 +1,17 @@
+{
+  "name": "webinar-relay",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Tiny WebSocket relay: rooms, join, broadcast. Serves the mobile page too.",
+  "scripts": {
+    "start": "node server.js",
+    "smoke": "node smoke.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

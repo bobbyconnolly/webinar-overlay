@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" width="50" height="50">
+  <!-- a pine cone: hand-drawn placeholder -->
+  <ellipse cx="25" cy="27" rx="13" ry="18" fill="#7a4a22" stroke="#4a2c12" stroke-width="1.4"/>
+  <g fill="#9c6232" stroke="#4a2c12" stroke-width="0.9">
+    <path d="M18 14 q7 -3 14 0 q-3 5 -7 5 q-4 0 -7 -5 Z"/>
+    <path d="M14 21 q5 -3 10 0 q-2 5 -5 5 q-3 0 -5 -5 Z"/><path d="M26 21 q5 -3 10 0 q-2 5 -5 5 q-3 0 -5 -5 Z"/>
+    <path d="M12 29 q5 -3 10 0 q-2 5 -5 5 q-3 0 -5 -5 Z"/><path d="M20 29 q5 -3 10 0 q-2 5 -5 5 q-3 0 -5 -5 Z"/><path d="M28 29 q5 -3 10 0 q-2 5 -5 5 q-3 0 -5 -5 Z"/>
+    <path d="M15 37 q5 -3 10 0 q-2 5 -5 5 q-3 0 -5 -5 Z"/><path d="M25 37 q5 -3 10 0 q-2 5 -5 5 q-3 0 -5 -5 Z"/>
+  </g>
+  <path d="M25 9 L25 4" stroke="#4a2c12" stroke-width="2" stroke-linecap="round"/>
+</svg>

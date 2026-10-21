@@ -1,0 +1,9 @@
+# Build context for relay/Dockerfile is the repo root; send only what it copies.
+*
+!relay/package.json
+!relay/package-lock.json
+!relay/server.js
+!relay/public/**
+!public/reagents/**
+!public/trinkets/**
+!public/cat-ginger.svg

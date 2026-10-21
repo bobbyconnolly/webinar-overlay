@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="110" height="110">
+  <!-- A rune stone seen at an angle: a flat disk with a rune cut into its face. The QR widget
+       folds into this once everyone has joined. Hand-drawn placeholder. -->
+  <defs>
+    <linearGradient id="face" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0" stop-color="#a6a6a6"/><stop offset="1" stop-color="#686868"/></linearGradient>
+    <linearGradient id="side" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a5a5a"/><stop offset="1" stop-color="#383838"/></linearGradient>
+  </defs>
+  <ellipse cx="62" cy="88" rx="50" ry="13" fill="rgba(0,0,0,0.35)"/>
+  <path d="M12 56 A48 30 0 0 0 108 56 L108 70 A48 30 0 0 1 12 70 Z" fill="url(#side)" stroke="#2f2f2f" stroke-width="1.5"/>
+  <ellipse cx="60" cy="56" rx="48" ry="30" fill="url(#face)" stroke="#2f2f2f" stroke-width="1.5"/>
+  <ellipse cx="60" cy="56" rx="41" ry="25" fill="none" stroke="#2f2f2f" stroke-width="1" opacity="0.35"/>
+  <path d="M22 50 l6 3 M94 44 l-5 4 M70 78 l4 -3 M30 66 l5 1" stroke="#3a3a3a" stroke-width="1.2" fill="none" opacity="0.6"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M60 36 V76 M60 54 L44 42 M60 54 L76 42" stroke="rgba(255,255,255,0.4)" stroke-width="6" transform="translate(-1 -1)"/>
+    <path d="M60 36 V76 M60 54 L44 42 M60 54 L76 42" stroke="#2a2a2a" stroke-width="5"/>
+    <path d="M60 36 V76 M60 54 L44 42 M60 54 L76 42" stroke="#8fdcff" stroke-width="2" opacity="0.8"/>
+  </g>
+</svg>
